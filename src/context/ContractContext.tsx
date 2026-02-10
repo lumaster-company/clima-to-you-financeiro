@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { useFinance } from './FinanceContext';
 import { supabase } from '../lib/supabase';
 
 export type ContractType = 'PMOC' | 'Manutenção' | 'Outro';
@@ -35,7 +34,6 @@ interface ContractContextType {
 const ContractContext = createContext<ContractContextType | undefined>(undefined);
 
 export const ContractProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { addTransaction } = useFinance();
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -127,20 +125,6 @@ export const ContractProvider: React.FC<{ children: ReactNode }> = ({ children }
                 };
 
                 setContracts(prev => [...prev, newContract]);
-
-                // AUTOMATICALLY GENERATE FIRST FINANCIAL ENTRY
-                // IMPORTANT: addTransaction is now async in FinanceContext
-                // We typically fire and forget here or await if critical.
-                await addTransaction({
-                    description: `Contrato - ${newContract.clientName}`,
-                    amount: newContract.value,
-                    type: 'income',
-                    category: 'Contrato / PMOC',
-                    date: newContract.startDate,
-                    status: 'pending',
-                    hasInvoice: true,
-                    contractId: newContract.id
-                });
             }
         } catch (error) {
             console.error("Error adding contract:", error);
