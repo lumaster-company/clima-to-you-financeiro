@@ -234,7 +234,13 @@ export const CategoryAnalysis = () => {
                                     layout="vertical"
                                     verticalAlign="middle"
                                     align="right"
-                                    wrapperStyle={{ fontSize: '12px', paddingLeft: '20px' }}
+                                    wrapperStyle={{ 
+                                        fontSize: '12px', 
+                                        paddingLeft: '20px',
+                                        paddingRight: '10px',
+                                        maxHeight: '350px',
+                                        overflowY: 'auto'
+                                    }}
                                 />
                             </PieChart>
                         </ResponsiveContainer>

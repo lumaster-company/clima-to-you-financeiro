@@ -155,14 +155,15 @@ export const ContractProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
 
     const removeContract = async (id: string) => {
-        if (confirm('Deseja realmente excluir este contrato?')) {
-            try {
-                const { error } = await supabase.from('contracts').delete().eq('id', id);
-                if (error) throw error;
-                setContracts(prev => prev.filter(c => c.id !== id));
-            } catch (error) {
-                console.error("Error removing contract:", error);
-            }
+        if (!confirm('Deseja realmente excluir este contrato?\n\nOs lançamentos financeiros associados NÃO serão apagados.')) return;
+
+        try {
+            const { error } = await supabase.from('contracts').delete().eq('id', id);
+            if (error) throw error;
+            setContracts(prev => prev.filter(c => c.id !== id));
+        } catch (error) {
+            console.error("Erro ao excluir contrato:", error);
+            alert('Erro ao excluir contrato. Tente novamente.');
         }
     };
 
