@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useFinance, type Project } from '../context/FinanceContext';
 import { useTeam } from '../context/TeamContext';
 import { calculateDetailedEmployeeCost } from '../utils/financeUtils';
-import { Search, Briefcase, TrendingUp, TrendingDown, DollarSign, Percent, ArrowLeft, Save, Users, FileText, ChevronRight } from 'lucide-react';
+import { Search, Briefcase, TrendingUp, Percent, ArrowLeft, Save, Users, FileText, ChevronRight } from 'lucide-react';
 
 const GestaoProjetos = () => {
     const { projects, filteredTransactions, updateProjectDetails } = useFinance();
@@ -97,9 +97,6 @@ const GestaoProjetos = () => {
     }, [projects, filteredTransactions, searchTerm, employees]);
 
     if (selectedProject) {
-        // Find stats directly from pre-computed to avoid repetition
-        const stats = projectStats.find(p => p.id === selectedProject.id);
-        
         // Se ainda não salvou, a UI precisa refletir os inputs locais instantaneamente para mostrar o impacto
         // Recalculating based on LOCAL state (taxRate, laborAllocations) instead of DB state (stats)
         const projectTransactions = filteredTransactions.filter(t => t.projectId === selectedProject.id && t.status === 'paid');
