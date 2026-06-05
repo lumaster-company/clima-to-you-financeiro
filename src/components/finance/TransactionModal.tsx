@@ -13,7 +13,7 @@ interface TransactionModalProps {
 // Hardcoded categories removed in favor of dynamic ones from Context
 
 const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, transactionToEdit }) => {
-    const { addTransaction, updateTransaction, incomeCategories, expenseCategories } = useFinance();
+    const { addTransaction, updateTransaction, incomeCategories, expenseCategories, projects } = useFinance();
 
     const [isConfigOpen, setIsConfigOpen] = useState(false);
 
@@ -24,6 +24,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
     const [date, setDate] = useState(getTodayString());
     const [status, setStatus] = useState<'pending' | 'paid'>('paid');
     const [hasInvoice, setHasInvoice] = useState(false);
+    const [projectId, setProjectId] = useState<string>('');
 
     // Initialize/Reset form
     useEffect(() => {
@@ -38,6 +39,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                 // Map status, handle potential 'overdue' as 'pending' for simple editing unless explicitly paid
                 setStatus(transactionToEdit.status === 'paid' ? 'paid' : 'pending');
                 setHasInvoice(transactionToEdit.hasInvoice);
+                setProjectId(transactionToEdit.projectId || '');
             } else {
                 // Create Mode
                 setDescription('');
@@ -47,6 +49,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                 setStatus('paid');
                 setHasInvoice(false);
                 setType('income');
+                setProjectId('');
             }
         }
     }, [isOpen, transactionToEdit]);
@@ -67,7 +70,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                 date,
                 status,
                 hasInvoice,
-                taxAmount
+                taxAmount,
+                projectId: projectId || undefined
             });
         } else {
             // Create
@@ -79,7 +83,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                 date,
                 status,
                 hasInvoice,
-                taxAmount
+                taxAmount,
+                projectId: projectId || undefined
             });
         }
 
@@ -183,6 +188,20 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                             <option value="">Selecione...</option>
                             {(type === 'income' ? incomeCategories : expenseCategories).map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Projeto / Obra (Opcional)</label>
+                        <select
+                            className="w-full rounded-lg border-gray-200 border p-2.5 bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none"
+                            value={projectId}
+                            onChange={(e) => setProjectId(e.target.value)}
+                        >
+                            <option value="">Nenhum (Custo Fixo / Geral)</option>
+                            {projects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                         </select>
                     </div>

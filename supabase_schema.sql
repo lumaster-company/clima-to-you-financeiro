@@ -147,3 +147,28 @@ insert into allowed_users (email) values
   ('lumaster.company1023@gmail.com'),
   ('climatoyou@gmail.com')
 on conflict (email) do nothing;
+
+
+--------------------------------------------------------------------------------
+-- 7. Projects Table
+--------------------------------------------------------------------------------
+create table if not exists projects (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table projects enable row level security;
+
+drop policy if exists "Allow all operations for public" on projects;
+drop policy if exists "Allow all operations for authenticated" on projects;
+
+create policy "Allow all operations for authenticated" on projects
+  for all to authenticated using (true) with check (true);
+
+
+--------------------------------------------------------------------------------
+-- 8. Alter Transactions Table
+--------------------------------------------------------------------------------
+-- Add project_id to transactions table
+alter table transactions add column if not exists project_id uuid references projects(id);

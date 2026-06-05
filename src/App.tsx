@@ -11,6 +11,7 @@ import Lancamentos from './pages/Lancamentos';
 import Custos from './pages/Custos';
 import Clientes from './pages/Clientes';
 import Projetos from './pages/Projetos';
+import GestaoProjetos from './pages/GestaoProjetos';
 import Equipe from './pages/Equipe';
 import Contratos from './pages/Contratos';
 import Config from './pages/Config';
@@ -56,6 +57,7 @@ function App() {
                     <Route path="/custos" element={<Custos />} />
                     <Route path="/clientes" element={<Clientes />} />
                     <Route path="/projetos" element={<Projetos />} />
+                    <Route path="/gestao-projetos" element={<GestaoProjetos />} />
                     <Route path="/equipe" element={
                       <ErrorBoundary>
                         <Equipe />

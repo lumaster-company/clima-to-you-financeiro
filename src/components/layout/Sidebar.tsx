@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Wallet, Receipt, Users, FileText, Settings, PieChart, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Wallet, Receipt, Users, FileText, Settings, PieChart, LogOut, X, Briefcase, BarChart2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface SidebarProps {
@@ -31,6 +31,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         { icon: <LayoutDashboard size={18} />, label: 'Visão Geral', path: '/dashboard' },
         { icon: <Wallet size={18} />, label: 'Lançamentos', path: '/lancamentos' },
         { icon: <Receipt size={18} />, label: 'Custos Fixos', path: '/custos' },
+        { icon: <Briefcase size={18} />, label: 'Obras', path: '/projetos' },
+        { icon: <BarChart2 size={18} />, label: 'Gestão de Projetos', path: '/gestao-projetos' },
         { icon: <Users size={18} />, label: 'Equipe', path: '/equipe' },
         { icon: <FileText size={18} />, label: 'Contratos', path: '/contratos' },
         { icon: <Settings size={18} />, label: 'Configurações', path: '/config' },

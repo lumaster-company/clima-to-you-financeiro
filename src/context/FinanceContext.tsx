@@ -17,6 +17,12 @@ export interface Transaction {
   hasInvoice: boolean;
   taxAmount?: number; // Previsão de imposto if hasInvoice is true
   contractId?: string; // Linked contract ID
+  projectId?: string; // Linked project ID
+}
+
+export interface Project {
+  id: string;
+  name: string;
 }
 
 export interface FixedCost {
@@ -30,6 +36,7 @@ export interface FixedCost {
 interface FinanceContextType {
   transactions: Transaction[];
   fixedCosts: FixedCost[];
+  projects: Project[];
   incomeCategories: string[];
   expenseCategories: string[];
   income: number;
@@ -44,6 +51,9 @@ interface FinanceContextType {
   addFixedCost: (cost: Omit<FixedCost, 'id'>) => Promise<void>;
   removeFixedCost: (id: string) => Promise<void>;
   updateFixedCost: (id: string, updates: Partial<FixedCost>) => Promise<void>;
+  addProject: (name: string) => Promise<void>;
+  updateProject: (id: string, name: string) => Promise<void>;
+  removeProject: (id: string) => Promise<void>;
   addCategory: (type: TransactionType, category: string) => Promise<void>;
   removeCategory: (type: TransactionType, category: string) => Promise<void>;
   updateCategory: (type: TransactionType, oldCategory: string, newCategory: string) => Promise<void>;
@@ -87,6 +97,7 @@ const DEFAULT_EXPENSE_CATEGORIES = [
 export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fixedCosts, setFixedCosts] = useState<FixedCost[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<string[]>(DEFAULT_INCOME_CATEGORIES);
   const [expenseCategories, setExpenseCategories] = useState<string[]>(DEFAULT_EXPENSE_CATEGORIES);
   const [selectedYear, setSelectedYear] = useState<string>(getCurrentYear());
@@ -105,7 +116,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
         if (txError) throw txError;
 
-        // Map database fields to Transaction interface if needed (snake_case to camelCase)
         const mappedTransactions: Transaction[] = (txData || []).map(t => ({
           id: t.id,
           description: t.description,
@@ -116,7 +126,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
           status: t.status,
           hasInvoice: t.is_fiscal,
           taxAmount: t.tax_amount ? parseFloat(t.tax_amount) : undefined,
-          contractId: t.contract_id
+          contractId: t.contract_id,
+          projectId: t.project_id
         }));
         setTransactions(mappedTransactions);
 
@@ -135,6 +146,20 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
           isActive: fc.is_active
         }));
         setFixedCosts(mappedFixedCosts);
+
+        // Fetch Projects
+        const { data: projData, error: projError } = await supabase
+          .from('projects')
+          .select('*')
+          .order('name');
+          
+        if (!projError && projData) {
+          const mappedProjects: Project[] = projData.map(p => ({
+            id: p.id,
+            name: p.name
+          }));
+          setProjects(mappedProjects);
+        }
 
         // Fetch Categories (if implemented in DB, else use defaults + local logic or fetch form separate table)
         // For now, adhering to the plan: explicit tables for transactions, employees, fixed_costs. 
@@ -190,7 +215,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         status: transaction.status,
         is_fiscal: transaction.hasInvoice,
         tax_amount: transaction.taxAmount,
-        contract_id: transaction.contractId
+        contract_id: transaction.contractId,
+        project_id: transaction.projectId
       };
 
       const { data, error } = await supabase
@@ -212,7 +238,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
           status: data.status,
           hasInvoice: data.is_fiscal,
           taxAmount: data.tax_amount ? parseFloat(data.tax_amount) : undefined,
-          contractId: data.contract_id
+          contractId: data.contract_id,
+          projectId: data.project_id
         }, ...prev]);
       }
     } catch (error) {
@@ -247,6 +274,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (updates.taxAmount !== undefined) dbUpdates.tax_amount = updates.taxAmount;
       // contractId usually not updated here, but if needed:
       if (updates.contractId !== undefined) dbUpdates.contract_id = updates.contractId;
+      if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId;
 
       const { error } = await supabase
         .from('transactions')
@@ -319,6 +347,48 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       setFixedCosts(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
     } catch (error) {
       console.error('Error updating fixed cost:', error);
+    }
+  };
+
+  // Projects Management
+  const addProject = async (name: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([{ name }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setProjects(prev => [...prev, { id: data.id, name: data.name }]);
+      }
+    } catch (error) {
+      console.error('Error adding project:', error);
+    }
+  };
+
+  const removeProject = async (id: string) => {
+    try {
+      const { error } = await supabase.from('projects').delete().eq('id', id);
+      if (error) throw error;
+      setProjects(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Error removing project:', error);
+    }
+  };
+
+  const updateProject = async (id: string, name: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ name })
+        .eq('id', id);
+
+      if (error) throw error;
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p));
+    } catch (error) {
+      console.error('Error updating project:', error);
     }
   };
 
@@ -479,6 +549,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     <FinanceContext.Provider value={{
       transactions,
       fixedCosts,
+      projects,
       incomeCategories,
       expenseCategories,
       income,
@@ -493,6 +564,9 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       addFixedCost,
       removeFixedCost,
       updateFixedCost,
+      addProject,
+      updateProject,
+      removeProject,
       addCategory,
       removeCategory,
       updateCategory,
