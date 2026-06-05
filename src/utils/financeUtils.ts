@@ -58,6 +58,9 @@ export const calculateDetailedEmployeeCost = (emp: Employee) => {
     // Formula: (Base de Cálculo * 1.8) + (Soma dos Benefícios)
     const realCost = (baseDeCalculo * 1.8) + benefits;
 
+    const fgtsMonthly = baseDeCalculo * 0.08; // 8% de FGTS sobre a base de cálculo
+    const totalProvisions = baseDeCalculo * 0.8; // 80% de provisões/encargos adicionais da base de cálculo (multiplicador 1.8)
+
     return {
         monthlyCash,
         realCost,
