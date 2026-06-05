@@ -45,18 +45,27 @@ export const calculateDetailedEmployeeCost = (emp: Employee) => {
     const baseDeCalculo = baseSalary + periculosidadeValue;
 
     // 2. Monthly Cash Flow (Saída Mensal)
-    const benefits = (financials.transportBenefits || 0) + 
-                     (financials.mealBenefits || 0) + 
+    const bonuses = financials.bonuses || 0;
+    const vtDiscountValue = financials.vtDiscount ? baseDeCalculo * 0.06 : 0;
+    
+    // Transporte com desconto (pode ser negativo, o que reduz o líquido pago)
+    const transportCost = (financials.transportBenefits || 0) - vtDiscountValue;
+    const transportFull = financials.transportBenefits || 0;
+
+    const benefitsWithoutTransport = (financials.mealBenefits || 0) + 
                      (financials.cestaBasica || 0) + 
                      (financials.planoDeSaude || 0) + 
                      (financials.internet || 0) +
-                     (financials.otherBenefits || 0);
+                     (financials.otherBenefits || 0) +
+                     bonuses;
 
-    const monthlyCash = baseDeCalculo + benefits;
+    const monthlyCash = baseDeCalculo + benefitsWithoutTransport + transportCost;
 
     // 3. Real Cost (Custo Total p/ Empresa com provisão para rescisão)
-    // Formula: (Base de Cálculo * 1.8) + (Soma dos Benefícios)
-    const realCost = (baseDeCalculo * 1.8) + benefits;
+    // Formula: (Base de Cálculo * 1.8) + (Soma dos Benefícios sem desconto de VT)
+    const realCost = (baseDeCalculo * 1.8) + benefitsWithoutTransport + transportFull;
+
+    const benefits = benefitsWithoutTransport + transportFull; // Used for returning in details
 
     const fgtsMonthly = baseDeCalculo * 0.08; // 8% de FGTS sobre a base de cálculo
     const totalProvisions = baseDeCalculo * 0.8; // 80% de provisões/encargos adicionais da base de cálculo (multiplicador 1.8)

@@ -12,5 +12,7 @@ export interface Employee {
         planoDeSaude: number;
         internet: number;
         otherBenefits?: number; // legacy
+        vtDiscount?: boolean;
+        bonuses?: number;
     };
 }

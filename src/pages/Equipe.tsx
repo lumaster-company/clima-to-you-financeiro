@@ -20,6 +20,8 @@ const Equipe = () => {
     const [cestaBasica, setCestaBasica] = useState('');
     const [planoDeSaude, setPlanoDeSaude] = useState('');
     const [internet, setInternet] = useState('');
+    const [vtDiscount, setVtDiscount] = useState(false);
+    const [bonuses, setBonuses] = useState('');
 
     const handleOpenModal = (employee?: Employee) => {
         if (employee) {
@@ -34,6 +36,8 @@ const Equipe = () => {
             setCestaBasica(employee.financials?.cestaBasica?.toString() || '');
             setPlanoDeSaude(employee.financials?.planoDeSaude?.toString() || '');
             setInternet(employee.financials?.internet?.toString() || '');
+            setVtDiscount(employee.financials?.vtDiscount || false);
+            setBonuses(employee.financials?.bonuses?.toString() || '');
         } else {
             setEditingEmployee(null);
             setName('');
@@ -46,6 +50,8 @@ const Equipe = () => {
             setCestaBasica('');
             setPlanoDeSaude('');
             setInternet('');
+            setVtDiscount(false);
+            setBonuses('');
         }
         setIsModalOpen(true);
     };
@@ -67,6 +73,8 @@ const Equipe = () => {
                 cestaBasica: Number(cestaBasica) || 0,
                 planoDeSaude: Number(planoDeSaude) || 0,
                 internet: Number(internet) || 0,
+                vtDiscount,
+                bonuses: Number(bonuses) || 0,
             },
         };
 
@@ -165,9 +173,17 @@ const Equipe = () => {
                                         <div className="flex justify-between items-center text-sm mt-2">
                                             <span className="text-gray-500">Benefícios</span>
                                             <span className="font-medium text-gray-700">
-                                                + R$ {(employee.financials.transportBenefits + employee.financials.mealBenefits + employee.financials.cestaBasica + employee.financials.planoDeSaude + employee.financials.internet).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                + R$ {costs.details.benefits?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
+                                        {employee.financials.vtDiscount && (
+                                            <div className="flex justify-between items-center text-sm text-red-600 mt-1">
+                                                <span className="text-red-500">Desconto VT (6%)</span>
+                                                <span className="font-medium">
+                                                    - R$ {(costs.details.baseDeCalculo! * 0.06).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        )}
                                     </>
                                 )}
 
@@ -340,6 +356,15 @@ const Equipe = () => {
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                                     placeholder="0,00"
                                                 />
+                                                <label className="flex items-center gap-2 mt-2 text-xs text-gray-600 cursor-pointer">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={vtDiscount}
+                                                        onChange={(e) => setVtDiscount(e.target.checked)}
+                                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    Aplicar desconto de VT (6%)
+                                                </label>
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-medium text-gray-600 mb-1">Alimentação (R$)</label>
@@ -371,12 +396,22 @@ const Equipe = () => {
                                                     placeholder="0,00"
                                                 />
                                             </div>
-                                            <div className="col-span-2">
+                                            <div className="col-span-2 sm:col-span-1">
                                                 <label className="block text-xs font-medium text-gray-600 mb-1">Internet/Telefone (R$)</label>
                                                 <input
                                                     type="number"
                                                     value={internet}
                                                     onChange={(e) => setInternet(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                                    placeholder="0,00"
+                                                />
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1">
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">Outros / Bonificações (R$)</label>
+                                                <input
+                                                    type="number"
+                                                    value={bonuses}
+                                                    onChange={(e) => setBonuses(e.target.value)}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                                     placeholder="0,00"
                                                 />
