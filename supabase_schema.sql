@@ -172,3 +172,8 @@ create policy "Allow all operations for authenticated" on projects
 --------------------------------------------------------------------------------
 -- Add project_id to transactions table
 alter table transactions add column if not exists project_id uuid references projects(id);
+
+-- Add tax and labor allocation fields to projects table
+alter table projects add column if not exists tax_rate numeric default 0;
+alter table projects add column if not exists labor_allocations jsonb default '[]'::jsonb;
+

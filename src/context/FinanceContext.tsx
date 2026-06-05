@@ -20,9 +20,16 @@ export interface Transaction {
   projectId?: string; // Linked project ID
 }
 
+export interface ProjectLaborAllocation {
+  employeeId: string;
+  daysWorked: number;
+}
+
 export interface Project {
   id: string;
   name: string;
+  taxRate?: number;
+  laborAllocations?: ProjectLaborAllocation[];
 }
 
 export interface FixedCost {
@@ -53,6 +60,7 @@ interface FinanceContextType {
   updateFixedCost: (id: string, updates: Partial<FixedCost>) => Promise<void>;
   addProject: (name: string) => Promise<void>;
   updateProject: (id: string, name: string) => Promise<void>;
+  updateProjectDetails: (id: string, taxRate: number, laborAllocations: ProjectLaborAllocation[]) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
   addCategory: (type: TransactionType, category: string) => Promise<void>;
   removeCategory: (type: TransactionType, category: string) => Promise<void>;
@@ -156,7 +164,9 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (!projError && projData) {
           const mappedProjects: Project[] = projData.map(p => ({
             id: p.id,
-            name: p.name
+            name: p.name,
+            taxRate: p.tax_rate ? parseFloat(p.tax_rate) : 0,
+            laborAllocations: p.labor_allocations || []
           }));
           setProjects(mappedProjects);
         }
@@ -392,6 +402,20 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  const updateProjectDetails = async (id: string, taxRate: number, laborAllocations: ProjectLaborAllocation[]) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ tax_rate: taxRate, labor_allocations: laborAllocations })
+        .eq('id', id);
+
+      if (error) throw error;
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, taxRate, laborAllocations } : p));
+    } catch (error) {
+      console.error('Error updating project details:', error);
+    }
+  };
+
   // Category Management - Optimistic updates for UI, sync to DB
   // Warning: "categories" table must exist
   const addCategory = async (type: TransactionType, category: string) => {
@@ -566,6 +590,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       updateFixedCost,
       addProject,
       updateProject,
+      updateProjectDetails,
       removeProject,
       addCategory,
       removeCategory,
