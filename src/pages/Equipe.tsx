@@ -14,10 +14,12 @@ const Equipe = () => {
     const [role, setRole] = useState('');
     const [type, setType] = useState<'CLT' | 'Sócio'>('CLT');
     const [salary, setSalary] = useState('');
-    const [periculosidade, setPericulosidade] = useState(false);
+    const [periculosidade, setPericulosidade] = useState<number>(0);
     const [transportBenefits, setTransportBenefits] = useState('');
     const [mealBenefits, setMealBenefits] = useState('');
-    const [otherBenefits, setOtherBenefits] = useState('');
+    const [cestaBasica, setCestaBasica] = useState('');
+    const [planoDeSaude, setPlanoDeSaude] = useState('');
+    const [internet, setInternet] = useState('');
 
     const handleOpenModal = (employee?: Employee) => {
         if (employee) {
@@ -26,20 +28,24 @@ const Equipe = () => {
             setRole(employee.role);
             setType(employee.type);
             setSalary(employee.financials?.salary?.toString() || '');
-            setPericulosidade(employee.financials?.periculosidade || false);
+            setPericulosidade(employee.financials?.periculosidade || 0);
             setTransportBenefits(employee.financials?.transportBenefits?.toString() || '');
             setMealBenefits(employee.financials?.mealBenefits?.toString() || '');
-            setOtherBenefits(employee.financials?.otherBenefits?.toString() || '');
+            setCestaBasica(employee.financials?.cestaBasica?.toString() || '');
+            setPlanoDeSaude(employee.financials?.planoDeSaude?.toString() || '');
+            setInternet(employee.financials?.internet?.toString() || '');
         } else {
             setEditingEmployee(null);
             setName('');
             setRole('');
             setType('CLT');
             setSalary('');
-            setPericulosidade(false);
+            setPericulosidade(0);
             setTransportBenefits('');
             setMealBenefits('');
-            setOtherBenefits('');
+            setCestaBasica('');
+            setPlanoDeSaude('');
+            setInternet('');
         }
         setIsModalOpen(true);
     };
@@ -58,7 +64,9 @@ const Equipe = () => {
                 periculosidade,
                 transportBenefits: Number(transportBenefits) || 0,
                 mealBenefits: Number(mealBenefits) || 0,
-                otherBenefits: Number(otherBenefits) || 0,
+                cestaBasica: Number(cestaBasica) || 0,
+                planoDeSaude: Number(planoDeSaude) || 0,
+                internet: Number(internet) || 0,
             },
         };
 
@@ -141,12 +149,26 @@ const Equipe = () => {
                                 </div>
 
                                 {employee.type === 'CLT' && (
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500">Benefícios</span>
-                                        <span className="font-medium text-gray-700">
-                                            + R$ {(employee.financials.transportBenefits + employee.financials.mealBenefits + employee.financials.otherBenefits).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
+                                    <>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-500">Periculosidade ({employee.financials.periculosidade}%)</span>
+                                            <span className="font-medium text-gray-700">
+                                                + R$ {((employee.financials.salary * employee.financials.periculosidade) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-gray-100">
+                                            <span className="text-gray-800">Base de Cálculo</span>
+                                            <span className="text-gray-800">
+                                                R$ {costs.details.baseDeCalculo?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm mt-2">
+                                            <span className="text-gray-500">Benefícios</span>
+                                            <span className="font-medium text-gray-700">
+                                                + R$ {(employee.financials.transportBenefits + employee.financials.mealBenefits + employee.financials.cestaBasica + employee.financials.planoDeSaude + employee.financials.internet).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </>
                                 )}
 
                                 {employee.type === 'Sócio' && (
@@ -288,17 +310,22 @@ const Equipe = () => {
 
                             {type === 'CLT' && (
                                 <div className="space-y-4 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
-                                    <div className="flex items-center gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
-                                        <input
-                                            type="checkbox"
-                                            checked={periculosidade}
-                                            onChange={(e) => setPericulosidade(e.target.checked)}
-                                            id="periculosidade"
-                                            className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-gray-300"
-                                        />
-                                        <label htmlFor="periculosidade" className="text-sm font-medium text-red-700 cursor-pointer">
-                                            Adicional de Periculosidade (+30%)
-                                        </label>
+                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Periculosidade (%)</label>
+                                        <select
+                                            value={periculosidade}
+                                            onChange={(e) => setPericulosidade(Number(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                        >
+                                            <option value={0}>0%</option>
+                                            <option value={5}>5%</option>
+                                            <option value={10}>10%</option>
+                                            <option value={15}>15%</option>
+                                            <option value={20}>20%</option>
+                                            <option value={25}>25%</option>
+                                            <option value={30}>30%</option>
+                                        </select>
+                                        <p className="text-xs text-gray-500 mt-1">Calculado sobre o Salário Base.</p>
                                     </div>
 
                                     <div>
@@ -324,12 +351,32 @@ const Equipe = () => {
                                                     placeholder="0,00"
                                                 />
                                             </div>
-                                            <div className="col-span-2">
-                                                <label className="block text-xs font-medium text-gray-600 mb-1">Outros Benefícios (R$)</label>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">Cesta Básica (R$)</label>
                                                 <input
                                                     type="number"
-                                                    value={otherBenefits}
-                                                    onChange={(e) => setOtherBenefits(e.target.value)}
+                                                    value={cestaBasica}
+                                                    onChange={(e) => setCestaBasica(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                                    placeholder="0,00"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">Plano de Saúde (R$)</label>
+                                                <input
+                                                    type="number"
+                                                    value={planoDeSaude}
+                                                    onChange={(e) => setPlanoDeSaude(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                                    placeholder="0,00"
+                                                />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">Internet/Telefone (R$)</label>
+                                                <input
+                                                    type="number"
+                                                    value={internet}
+                                                    onChange={(e) => setInternet(e.target.value)}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                                     placeholder="0,00"
                                                 />

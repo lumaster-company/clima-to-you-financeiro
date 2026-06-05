@@ -5,9 +5,12 @@ export interface Employee {
     type: 'CLT' | 'Sócio';
     financials: {
         salary: number; // Base Salary or Pró-labore Bruto
-        periculosidade: boolean; // Only for CLT
+        periculosidade: number; // Percentage (0, 5, 10, 15, 20, 25, 30)
         transportBenefits: number; // Only for CLT
         mealBenefits: number; // Only for CLT
-        otherBenefits: number; // Only for CLT
+        cestaBasica: number;
+        planoDeSaude: number;
+        internet: number;
+        otherBenefits?: number; // legacy
     };
 }

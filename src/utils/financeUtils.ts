@@ -14,9 +14,12 @@ export const generateUUID = (): string => {
 export const calculateDetailedEmployeeCost = (emp: Employee) => {
     const financials = emp.financials || {
         salary: 0,
-        periculosidade: false,
+        periculosidade: 0,
         transportBenefits: 0,
         mealBenefits: 0,
+        cestaBasica: 0,
+        planoDeSaude: 0,
+        internet: 0,
         otherBenefits: 0
     };
 
@@ -34,35 +37,33 @@ export const calculateDetailedEmployeeCost = (emp: Employee) => {
         };
     }
 
-    // CLT Logic (Simples Nacional - Pessimistic/Termination Scenario)
+    // CLT Logic
 
     // 1. Base Remuneration
-    const periculosidadeValue = financials.periculosidade ? baseSalary * 0.30 : 0;
-    const totalRemuneration = baseSalary + periculosidadeValue; // Base for FGTS and Provisions
+    const periculosidadePerc = financials.periculosidade || 0;
+    const periculosidadeValue = baseSalary * (periculosidadePerc / 100);
+    const baseDeCalculo = baseSalary + periculosidadeValue;
 
     // 2. Monthly Cash Flow (Saída Mensal)
-    const fgtsMonthly = totalRemuneration * 0.08;
-    const benefits = (financials.transportBenefits || 0) + (financials.mealBenefits || 0) + (financials.otherBenefits || 0);
+    const benefits = (financials.transportBenefits || 0) + 
+                     (financials.mealBenefits || 0) + 
+                     (financials.cestaBasica || 0) + 
+                     (financials.planoDeSaude || 0) + 
+                     (financials.internet || 0) +
+                     (financials.otherBenefits || 0);
 
-    const monthlyCash = totalRemuneration + benefits + fgtsMonthly;
+    const monthlyCash = baseDeCalculo + benefits;
 
-    // 3. Termination Provisions (Future Liabilities)
-    const provisionVacation = totalRemuneration * 0.1111; // 11.11% (Vacation + 1/3)
-    const provision13th = totalRemuneration * 0.0833;     // 8.33% (13th Salary)
-    const provisionNotice = totalRemuneration * 0.0833;   // 8.33% (Indemnified Notice)
-    const provisionFgtsFine = totalRemuneration * 0.0400; // 4.00% (40% Fine on deposits)
-    const provisionFgtsOnProv = totalRemuneration * 0.0200; // 2.00% (FGTS on Provisions)
-
-    const totalProvisions = provisionVacation + provision13th + provisionNotice + provisionFgtsFine + provisionFgtsOnProv;
-
-    // 4. Real Cost (Custo Total)
-    const realCost = monthlyCash + totalProvisions;
+    // 3. Real Cost (Custo Total p/ Empresa com provisão para rescisão)
+    // Formula: (Base de Cálculo * 1.8) + (Soma dos Benefícios)
+    const realCost = (baseDeCalculo * 1.8) + benefits;
 
     return {
         monthlyCash,
         realCost,
         details: {
-            totalRemuneration,
+            baseDeCalculo,
+            totalRemuneration: baseDeCalculo,
             benefits,
             fgtsMonthly,
             totalProvisions

@@ -32,7 +32,13 @@ export const TeamProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         type: e.type,
                         financials: {
                             salary: e.base_salary ? parseFloat(e.base_salary) : 0,
-                            ...e.benefits_json
+                            periculosidade: e.benefits_json?.periculosidade === true ? 30 : (Number(e.benefits_json?.periculosidade) || 0),
+                            transportBenefits: Number(e.benefits_json?.transportBenefits) || 0,
+                            mealBenefits: Number(e.benefits_json?.mealBenefits) || 0,
+                            cestaBasica: Number(e.benefits_json?.cestaBasica) || 0,
+                            planoDeSaude: Number(e.benefits_json?.planoDeSaude) || 0,
+                            internet: Number(e.benefits_json?.internet) || 0,
+                            otherBenefits: Number(e.benefits_json?.otherBenefits) || 0,
                         }
                     }));
                     setEmployees(mapped);
@@ -58,6 +64,9 @@ export const TeamProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     periculosidade: employee.financials.periculosidade,
                     transportBenefits: employee.financials.transportBenefits,
                     mealBenefits: employee.financials.mealBenefits,
+                    cestaBasica: employee.financials.cestaBasica,
+                    planoDeSaude: employee.financials.planoDeSaude,
+                    internet: employee.financials.internet,
                     otherBenefits: employee.financials.otherBenefits
                 }
             };
@@ -73,7 +82,13 @@ export const TeamProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     type: data.type,
                     financials: {
                         salary: data.base_salary ? parseFloat(data.base_salary) : 0,
-                        ...data.benefits_json
+                        periculosidade: data.benefits_json?.periculosidade === true ? 30 : (Number(data.benefits_json?.periculosidade) || 0),
+                        transportBenefits: Number(data.benefits_json?.transportBenefits) || 0,
+                        mealBenefits: Number(data.benefits_json?.mealBenefits) || 0,
+                        cestaBasica: Number(data.benefits_json?.cestaBasica) || 0,
+                        planoDeSaude: Number(data.benefits_json?.planoDeSaude) || 0,
+                        internet: Number(data.benefits_json?.internet) || 0,
+                        otherBenefits: Number(data.benefits_json?.otherBenefits) || 0,
                     }
                 }]);
             }
@@ -107,6 +122,9 @@ export const TeamProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         periculosidade: newFinancials.periculosidade,
                         transportBenefits: newFinancials.transportBenefits,
                         mealBenefits: newFinancials.mealBenefits,
+                        cestaBasica: newFinancials.cestaBasica,
+                        planoDeSaude: newFinancials.planoDeSaude,
+                        internet: newFinancials.internet,
                         otherBenefits: newFinancials.otherBenefits
                     };
                 }
