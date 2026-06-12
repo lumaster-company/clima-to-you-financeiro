@@ -1,4 +1,5 @@
 import { useFinance } from '../../context/FinanceContext';
+import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, Calendar, Clock, TrendingUp } from 'lucide-react';
 
 import clsx from 'clsx';
@@ -6,6 +7,7 @@ import { getTodayString, addDaysStr } from '../../utils/dateUtils';
 
 const FinanceSummary = () => {
     const { filteredTransactions: transactions, balance } = useFinance();
+    const { role } = useAuth();
 
     const today = getTodayString();
     const next7DaysStr = addDaysStr(today, 7);
@@ -32,7 +34,9 @@ const FinanceSummary = () => {
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-start justify-between">
             <div>
                 <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-                <h3 className={clsx("text-2xl font-bold", color)}>{formatCurrency(value)}</h3>
+                <h3 className={clsx("text-2xl font-bold", color)}>
+                    {typeof value === 'number' ? formatCurrency(value) : value}
+                </h3>
             </div>
             <div className={clsx("p-2 rounded-lg bg-opacity-10", color.replace('text-', 'bg-'))}>
                 <Icon size={24} className={color} />
@@ -61,15 +65,22 @@ const FinanceSummary = () => {
                     color="text-blue-600"
                     icon={Clock}
                 />
-                <Card
-                    title="Saldo em Caixa"
-                    value={balance}
-                    color={balance >= 0 ? "text-green-600" : "text-red-600"}
-                    icon={TrendingUp}
-                />
+                {role !== 'assistant' ? (
+                    <Card
+                        title="Saldo em Caixa"
+                        value={balance}
+                        color={balance >= 0 ? "text-green-600" : "text-red-600"}
+                        icon={TrendingUp}
+                    />
+                ) : (
+                    <Card
+                        title="Saldo em Caixa"
+                        value="---"
+                        color="text-gray-400"
+                        icon={TrendingUp}
+                    />
+                )}
             </div>
-
-
         </>
     );
 };
