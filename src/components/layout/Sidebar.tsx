@@ -10,7 +10,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-    const { user, signOut } = useAuth();
+    const { user, signOut, role } = useAuth();
     const [logo, setLogo] = React.useState<string | null>(() => localStorage.getItem('app_logo'));
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -36,7 +36,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         { icon: <Users size={18} />, label: 'Equipe', path: '/equipe' },
         { icon: <FileText size={18} />, label: 'Contratos', path: '/contratos' },
         { icon: <Settings size={18} />, label: 'Configurações', path: '/config' },
-    ];
+    ].filter(item => {
+        if (role === 'assistant') {
+            return item.path === '/lancamentos';
+        }
+        return true;
+    });
 
     return (
         <>

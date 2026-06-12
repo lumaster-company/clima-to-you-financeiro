@@ -6,6 +6,7 @@ import type { User, Session } from '@supabase/supabase-js';
 interface AuthContextType {
     user: User | null;
     session: Session | null;
+    role: 'admin' | 'assistant' | null;
     isLoading: boolean;
     signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
@@ -16,45 +17,55 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
+    const [role, setRole] = useState<'admin' | 'assistant' | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const checkWhitelist = async (currentUser: User) => {
-        if (!currentUser.email) return false;
+        if (!currentUser.email) return { isAllowed: false, userRole: null };
 
         try {
             const { data, error } = await supabase
                 .from('allowed_users')
-                .select('email')
+                .select('*')
                 .eq('email', currentUser.email)
                 .single();
 
             if (error || !data) {
                 console.warn("User not in whitelist:", currentUser.email);
-                return false;
+                return { isAllowed: false, userRole: null };
             }
-            return true;
+
+            let resolvedRole = data.role || 'assistant';
+            if (currentUser.email === 'lumaster.company1023@gmail.com' || currentUser.email === 'climatoyou@gmail.com') {
+                resolvedRole = 'admin';
+            }
+
+            return { isAllowed: true, userRole: resolvedRole };
         } catch (err) {
             console.error("Error checking whitelist:", err);
-            return false;
+            return { isAllowed: false, userRole: null };
         }
     };
 
     const handleSession = async (currentSession: Session | null) => {
         if (currentSession?.user) {
-            const isAllowed = await checkWhitelist(currentSession.user);
+            const { isAllowed, userRole } = await checkWhitelist(currentSession.user);
             if (isAllowed) {
                 setSession(currentSession);
                 setUser(currentSession.user);
+                setRole(userRole as 'admin' | 'assistant');
             } else {
                 await supabase.auth.signOut();
                 setSession(null);
                 setUser(null);
+                setRole(null);
                 alert("Acesso Restrito: Seu e-mail não está autorizado.");
                 window.location.href = '/login'; // Force redirect
             }
         } else {
             setSession(null);
             setUser(null);
+            setRole(null);
         }
         setIsLoading(false);
     };
@@ -71,6 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!session) {
                 setSession(null);
                 setUser(null);
+                setRole(null);
                 setIsLoading(false);
             } else {
                 // Re-verify on every auth change (login, token refresh)
@@ -106,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, isLoading, signInWithGoogle, signOut }}>
+        <AuthContext.Provider value={{ user, session, role, isLoading, signInWithGoogle, signOut }}>
             {children}
         </AuthContext.Provider>
     );

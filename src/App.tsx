@@ -1,5 +1,5 @@
 
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FinanceProvider } from './context/FinanceContext';
 import { TeamProvider } from './context/TeamContext';
@@ -20,7 +20,8 @@ import { Loader2 } from 'lucide-react';
 
 // Protected Route Component
 const ProtectedRoute = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, role } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -32,6 +33,11 @@ const ProtectedRoute = () => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Se assistente tentar acessar qualquer coisa diferente de lançamentos
+  if (role === 'assistant' && location.pathname !== '/lancamentos') {
+    return <Navigate to="/lancamentos" replace />;
   }
 
   return <Outlet />;

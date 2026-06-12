@@ -8,6 +8,7 @@ import { Plus, Trash2, ShieldAlert, Loader2 } from 'lucide-react';
 
 interface AllowedUser {
     email: string;
+    role?: string;
     created_at: string;
 }
 
@@ -16,6 +17,7 @@ const Config = () => {
     const [allowedUsers, setAllowedUsers] = useState<AllowedUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [newEmail, setNewEmail] = useState('');
+    const [newRole, setNewRole] = useState('assistant');
     const [isAdding, setIsAdding] = useState(false);
 
     useEffect(() => {
@@ -46,11 +48,12 @@ const Config = () => {
         try {
             const { error } = await supabase
                 .from('allowed_users')
-                .insert([{ email: newEmail }]);
+                .insert([{ email: newEmail, role: newRole }]);
 
             if (error) throw error;
 
             setNewEmail('');
+            setNewRole('assistant');
             fetchAllowedUsers();
         } catch (error) {
             console.error("Error adding user:", error);
@@ -107,6 +110,14 @@ const Config = () => {
                             onChange={(e) => setNewEmail(e.target.value)}
                             required
                         />
+                        <select
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685] focus:border-transparent outline-none transition-all bg-white"
+                            value={newRole}
+                            onChange={(e) => setNewRole(e.target.value)}
+                        >
+                            <option value="admin">Administrador</option>
+                            <option value="assistant">Assistente</option>
+                        </select>
                         <button
                             type="submit"
                             disabled={isAdding}
@@ -131,7 +142,12 @@ const Config = () => {
                                             <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 uppercase">
                                                 {u.email.substring(0, 2)}
                                             </div>
-                                            <span className="text-sm text-gray-700 font-medium">{u.email}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-gray-700 font-medium">{u.email}</span>
+                                                <span className="text-xs text-gray-500">
+                                                    {u.role === 'admin' ? 'Administrador' : 'Assistente'}
+                                                </span>
+                                            </div>
                                         </div>
                                         {/* Protect current user from deleting themselves ideally, but standard CRUD for now */}
                                         <button
