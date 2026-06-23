@@ -13,9 +13,11 @@ const GestaoProjetos = () => {
     // Detail view states
     const [taxRate, setTaxRate] = useState<number>(0);
     const [indirectCostRate, setIndirectCostRate] = useState<number>(0);
-    const [toolKit, setToolKit] = useState<string>('');
-    const [toolUsageValue, setToolUsageValue] = useState<number>(0);
-    const [vehicleUsageValue, setVehicleUsageValue] = useState<number>(0);
+    const [toolKitName, setToolKitName] = useState<string>('');
+    const [toolDailyValue, setToolDailyValue] = useState<number>(0);
+    const [toolDays, setToolDays] = useState<number>(0);
+    const [vehicleDailyValue, setVehicleDailyValue] = useState<number>(0);
+    const [vehicleDays, setVehicleDays] = useState<number>(0);
     const [laborAllocations, setLaborAllocations] = useState<{employeeId: string, daysWorked: number}[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -26,20 +28,62 @@ const GestaoProjetos = () => {
             if (currentProject) {
                 setTaxRate(currentProject.taxRate || 0);
                 setIndirectCostRate(currentProject.indirectCostRate || 0);
-                setToolKit(currentProject.toolKit || '');
-                setToolUsageValue(currentProject.toolUsageValue || 0);
-                setVehicleUsageValue(currentProject.vehicleUsageValue || 0);
+                
+                let parsedKit = { name: '', daily: 0, days: 0, vDaily: 0, vDays: 0 };
+                try {
+                    if (currentProject.toolKit && currentProject.toolKit.startsWith('{')) {
+                        parsedKit = JSON.parse(currentProject.toolKit);
+                    } else {
+                        parsedKit.name = currentProject.toolKit || '';
+                        // Fallback logic for legacy total value
+                        if (currentProject.toolUsageValue && currentProject.toolUsageValue > 0) {
+                            parsedKit.daily = currentProject.toolUsageValue;
+                            parsedKit.days = 1;
+                        }
+                        if (currentProject.vehicleUsageValue && currentProject.vehicleUsageValue > 0) {
+                            parsedKit.vDaily = currentProject.vehicleUsageValue;
+                            parsedKit.vDays = 1;
+                        }
+                    }
+                } catch(e) {}
+
+                setToolKitName(parsedKit.name);
+                setToolDailyValue(parsedKit.daily || 0);
+                setToolDays(parsedKit.days || 0);
+                setVehicleDailyValue(parsedKit.vDaily || 0);
+                setVehicleDays(parsedKit.vDays || 0);
+                
                 setLaborAllocations(currentProject.laborAllocations || []);
                 setSelectedProject(currentProject); // Keep reference updated
             }
         }
     }, [selectedProject?.id, projects]);
 
+    const handleKitChange = (kit: string) => {
+        setToolKitName(kit);
+        if (kit === 'Kit Padrão') {
+            setToolDailyValue(150); // Valor sugerido
+        } else if (kit === 'Kit Completo') {
+            setToolDailyValue(350); // Valor sugerido
+        }
+    };
+
     const handleSaveDetails = async () => {
         if (!selectedProject) return;
         setIsSaving(true);
         try {
-            await updateProjectDetails(selectedProject.id, taxRate, indirectCostRate, toolKit, toolUsageValue, vehicleUsageValue, laborAllocations);
+            const toolTotal = toolDailyValue * toolDays;
+            const vehicleTotal = vehicleDailyValue * vehicleDays;
+            
+            const kitJson = JSON.stringify({
+                name: toolKitName,
+                daily: toolDailyValue,
+                days: toolDays,
+                vDaily: vehicleDailyValue,
+                vDays: vehicleDays
+            });
+
+            await updateProjectDetails(selectedProject.id, taxRate, indirectCostRate, kitJson, toolTotal, vehicleTotal, laborAllocations);
             alert('Configurações do projeto salvas com sucesso!');
         } catch (error) {
             console.error(error);
@@ -126,7 +170,7 @@ const GestaoProjetos = () => {
 
         const impostoEstimadoLocal = receitaTotal * (taxRate / 100);
         const custosIndiretosLocal = receitaTotal * (indirectCostRate / 100);
-        const custosAtivosLocal = toolUsageValue + vehicleUsageValue;
+        const custosAtivosLocal = (toolDailyValue * toolDays) + (vehicleDailyValue * vehicleDays);
         
         const lucroRealLocal = receitaTotal - custoDireto - custoMaoDeObraLocal - impostoEstimadoLocal - custosIndiretosLocal - custosAtivosLocal;
         const margemLocal = receitaTotal > 0 ? (lucroRealLocal / receitaTotal) * 100 : 0;
@@ -247,38 +291,77 @@ const GestaoProjetos = () => {
                                 <Briefcase size={20} />
                                 <h3 className="font-bold text-lg">Custos Operacionais Adicionais</h3>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-6">
+                                {/* Ferramentas */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kit Ferramentas</label>
-                                    <select 
-                                        value={toolKit}
-                                        onChange={e => setToolKit(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all bg-white"
-                                    >
-                                        <option value="">Selecione um Kit</option>
-                                        <option value="Kit Padrão">Kit Padrão</option>
-                                        <option value="Kit Completo">Kit Completo</option>
-                                    </select>
+                                    <h4 className="font-semibold text-gray-800 mb-3 border-b pb-2">Ferramentas</h4>
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Kit Sugerido</label>
+                                            <select 
+                                                value={toolKitName}
+                                                onChange={e => handleKitChange(e.target.value)}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all bg-white"
+                                            >
+                                                <option value="">Personalizado</option>
+                                                <option value="Kit Padrão">Kit Padrão</option>
+                                                <option value="Kit Completo">Kit Completo</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Valor Diário (R$)</label>
+                                            <input 
+                                                type="number"
+                                                value={toolDailyValue || ''}
+                                                onChange={e => setToolDailyValue(parseFloat(e.target.value) || 0)}
+                                                placeholder="0,00"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Dias Utilizados</label>
+                                            <input 
+                                                type="number"
+                                                value={toolDays || ''}
+                                                onChange={e => setToolDays(parseFloat(e.target.value) || 0)}
+                                                placeholder="0"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="text-right text-sm font-bold text-gray-600 mt-2">
+                                        Custo na Obra: <span className="text-[#442685]">{formatCurrency(toolDailyValue * toolDays)}</span>
+                                    </div>
                                 </div>
+
+                                {/* Veículo */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Valor Ferramentas (R$)</label>
-                                    <input 
-                                        type="number"
-                                        value={toolUsageValue || ''}
-                                        onChange={e => setToolUsageValue(parseFloat(e.target.value) || 0)}
-                                        placeholder="0,00"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Veículo (R$)</label>
-                                    <input 
-                                        type="number"
-                                        value={vehicleUsageValue || ''}
-                                        onChange={e => setVehicleUsageValue(parseFloat(e.target.value) || 0)}
-                                        placeholder="0,00"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
-                                    />
+                                    <h4 className="font-semibold text-gray-800 mb-3 border-b pb-2">Veículo</h4>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Valor Diário (R$)</label>
+                                            <input 
+                                                type="number"
+                                                value={vehicleDailyValue || ''}
+                                                onChange={e => setVehicleDailyValue(parseFloat(e.target.value) || 0)}
+                                                placeholder="0,00"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Dias Utilizados</label>
+                                            <input 
+                                                type="number"
+                                                value={vehicleDays || ''}
+                                                onChange={e => setVehicleDays(parseFloat(e.target.value) || 0)}
+                                                placeholder="0"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="text-right text-sm font-bold text-gray-600 mt-2">
+                                        Custo na Obra: <span className="text-[#442685]">{formatCurrency(vehicleDailyValue * vehicleDays)}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
