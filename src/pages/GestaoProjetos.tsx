@@ -27,7 +27,7 @@ const GestaoProjetos = () => {
             const currentProject = projects.find(p => p.id === selectedProject.id);
             if (currentProject) {
                 setTaxRate(currentProject.taxRate ?? 7);
-                setIndirectCostRate(currentProject.indirectCostRate ?? 6);
+                setIndirectCostRate(currentProject.indirectCostRate ?? 7);
                 
                 let parsedKit = { name: '', daily: 0, days: 0, vDaily: 50, vDays: 0 };
                 try {
