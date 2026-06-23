@@ -169,8 +169,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
           const mappedProjects: Project[] = projData.map(p => ({
             id: p.id,
             name: p.name,
-            taxRate: p.tax_rate ? parseFloat(p.tax_rate) : 0,
-            indirectCostRate: p.indirect_cost_rate ? parseFloat(p.indirect_cost_rate) : 0,
+            taxRate: p.tax_rate != null ? parseFloat(p.tax_rate) : undefined,
+            indirectCostRate: p.indirect_cost_rate != null ? parseFloat(p.indirect_cost_rate) : undefined,
             toolKit: p.tool_kit || '',
             toolUsageValue: p.tool_usage_value ? parseFloat(p.tool_usage_value) : 0,
             vehicleUsageValue: p.vehicle_usage_value ? parseFloat(p.vehicle_usage_value) : 0,
