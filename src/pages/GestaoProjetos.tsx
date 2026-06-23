@@ -94,7 +94,7 @@ const GestaoProjetos = () => {
     };
 
     const handleAllocationChange = (employeeId: string, daysWorkedStr: string) => {
-        const days = parseFloat(daysWorkedStr) || 0;
+        const days = Math.max(0, parseFloat(daysWorkedStr) || 0);
         setLaborAllocations(prev => {
             const existing = prev.find(a => a.employeeId === employeeId);
             if (existing) {
@@ -257,8 +257,9 @@ const GestaoProjetos = () => {
                                         <input 
                                             type="number"
                                             value={taxRate || ''}
-                                            onChange={e => setTaxRate(parseFloat(e.target.value) || 0)}
+                                            onChange={e => setTaxRate(Math.max(0, parseFloat(e.target.value) || 0))}
                                             placeholder="0"
+                                            min="0"
                                             className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
                                         />
                                         <Percent className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -270,8 +271,9 @@ const GestaoProjetos = () => {
                                         <input 
                                             type="number"
                                             value={indirectCostRate || ''}
-                                            onChange={e => setIndirectCostRate(parseFloat(e.target.value) || 0)}
+                                            onChange={e => setIndirectCostRate(Math.max(0, parseFloat(e.target.value) || 0))}
                                             placeholder="0"
+                                            min="0"
                                             className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
                                         />
                                         <Percent className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -311,8 +313,9 @@ const GestaoProjetos = () => {
                                         <input 
                                             type="number"
                                             value={toolDailyValue || ''}
-                                            onChange={e => setToolDailyValue(parseFloat(e.target.value) || 0)}
+                                            onChange={e => setToolDailyValue(Math.max(0, parseFloat(e.target.value) || 0))}
                                             placeholder="0,00"
+                                            min="0"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
                                         />
 
@@ -320,8 +323,9 @@ const GestaoProjetos = () => {
                                         <input 
                                             type="number"
                                             value={toolDays || ''}
-                                            onChange={e => setToolDays(parseFloat(e.target.value) || 0)}
+                                            onChange={e => setToolDays(Math.max(0, parseFloat(e.target.value) || 0))}
                                             placeholder="0"
+                                            min="0"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
                                         />
                                     </div>
@@ -338,8 +342,9 @@ const GestaoProjetos = () => {
                                         <input 
                                             type="number"
                                             value={vehicleDailyValue || ''}
-                                            onChange={e => setVehicleDailyValue(parseFloat(e.target.value) || 0)}
+                                            onChange={e => setVehicleDailyValue(Math.max(0, parseFloat(e.target.value) || 0))}
                                             placeholder="0,00"
+                                            min="0"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
                                         />
 
@@ -347,8 +352,9 @@ const GestaoProjetos = () => {
                                         <input 
                                             type="number"
                                             value={vehicleDays || ''}
-                                            onChange={e => setVehicleDays(parseFloat(e.target.value) || 0)}
+                                            onChange={e => setVehicleDays(Math.max(0, parseFloat(e.target.value) || 0))}
                                             placeholder="0"
+                                            min="0"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
                                         />
                                     </div>
