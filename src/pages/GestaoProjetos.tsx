@@ -295,41 +295,37 @@ const GestaoProjetos = () => {
                                 {/* Ferramentas */}
                                 <div>
                                     <h4 className="font-semibold text-gray-800 mb-3 border-b pb-2">Ferramentas</h4>
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Kit Sugerido</label>
-                                            <select 
-                                                value={toolKitName}
-                                                onChange={e => handleKitChange(e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all bg-white"
-                                            >
-                                                <option value="">Personalizado</option>
-                                                <option value="Kit Padrão">Kit Padrão</option>
-                                                <option value="Kit Completo">Kit Completo</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Valor Diário (R$)</label>
-                                            <input 
-                                                type="number"
-                                                value={toolDailyValue || ''}
-                                                onChange={e => setToolDailyValue(parseFloat(e.target.value) || 0)}
-                                                placeholder="0,00"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Dias Utilizados</label>
-                                            <input 
-                                                type="number"
-                                                value={toolDays || ''}
-                                                onChange={e => setToolDays(parseFloat(e.target.value) || 0)}
-                                                placeholder="0"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
-                                            />
-                                        </div>
+                                    <div className="grid grid-cols-[140px_1fr] items-center gap-y-4 gap-x-4">
+                                        <label className="text-sm font-medium text-gray-700">Kit Sugerido</label>
+                                        <select 
+                                            value={toolKitName}
+                                            onChange={e => handleKitChange(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all bg-white"
+                                        >
+                                            <option value="">Personalizado</option>
+                                            <option value="Kit Padrão">Kit Padrão</option>
+                                            <option value="Kit Completo">Kit Completo</option>
+                                        </select>
+
+                                        <label className="text-sm font-medium text-gray-700">Valor Diário (R$)</label>
+                                        <input 
+                                            type="number"
+                                            value={toolDailyValue || ''}
+                                            onChange={e => setToolDailyValue(parseFloat(e.target.value) || 0)}
+                                            placeholder="0,00"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                        />
+
+                                        <label className="text-sm font-medium text-gray-700">Dias Utilizados</label>
+                                        <input 
+                                            type="number"
+                                            value={toolDays || ''}
+                                            onChange={e => setToolDays(parseFloat(e.target.value) || 0)}
+                                            placeholder="0"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                        />
                                     </div>
-                                    <div className="text-right text-sm font-bold text-gray-600 mt-2">
+                                    <div className="text-right text-sm font-bold text-gray-600 mt-3">
                                         Custo na Obra: <span className="text-[#442685]">{formatCurrency(toolDailyValue * toolDays)}</span>
                                     </div>
                                 </div>
@@ -337,29 +333,26 @@ const GestaoProjetos = () => {
                                 {/* Veículo */}
                                 <div>
                                     <h4 className="font-semibold text-gray-800 mb-3 border-b pb-2">Veículo</h4>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Valor Diário (R$)</label>
-                                            <input 
-                                                type="number"
-                                                value={vehicleDailyValue || ''}
-                                                onChange={e => setVehicleDailyValue(parseFloat(e.target.value) || 0)}
-                                                placeholder="0,00"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Dias Utilizados</label>
-                                            <input 
-                                                type="number"
-                                                value={vehicleDays || ''}
-                                                onChange={e => setVehicleDays(parseFloat(e.target.value) || 0)}
-                                                placeholder="0"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
-                                            />
-                                        </div>
+                                    <div className="grid grid-cols-[140px_1fr] items-center gap-y-4 gap-x-4">
+                                        <label className="text-sm font-medium text-gray-700">Valor Diário (R$)</label>
+                                        <input 
+                                            type="number"
+                                            value={vehicleDailyValue || ''}
+                                            onChange={e => setVehicleDailyValue(parseFloat(e.target.value) || 0)}
+                                            placeholder="0,00"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                        />
+
+                                        <label className="text-sm font-medium text-gray-700">Dias Utilizados</label>
+                                        <input 
+                                            type="number"
+                                            value={vehicleDays || ''}
+                                            onChange={e => setVehicleDays(parseFloat(e.target.value) || 0)}
+                                            placeholder="0"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                        />
                                     </div>
-                                    <div className="text-right text-sm font-bold text-gray-600 mt-2">
+                                    <div className="text-right text-sm font-bold text-gray-600 mt-3">
                                         Custo na Obra: <span className="text-[#442685]">{formatCurrency(vehicleDailyValue * vehicleDays)}</span>
                                     </div>
                                 </div>
@@ -388,7 +381,11 @@ const GestaoProjetos = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {employees.map(emp => {
+                                    {employees.filter(emp => {
+                                        const role = (emp.role || '').toLowerCase();
+                                        const excludedRoles = ['financeiro', 'comercial', 'diretoria', 'diretor', 'administrativo', 'rh', 'vendedor', 'gerente'];
+                                        return !excludedRoles.some(r => role.includes(r));
+                                    }).map(emp => {
                                         const costDay = calculateDetailedEmployeeCost(emp).realCost / 22;
                                         const allocation = laborAllocations.find(a => a.employeeId === emp.id);
                                         const daysWorked = allocation ? allocation.daysWorked : 0;
@@ -417,10 +414,14 @@ const GestaoProjetos = () => {
                                             </tr>
                                         );
                                     })}
-                                    {employees.length === 0 && (
+                                    {employees.filter(emp => {
+                                        const role = (emp.role || '').toLowerCase();
+                                        const excludedRoles = ['financeiro', 'comercial', 'diretoria', 'diretor', 'administrativo', 'rh', 'vendedor', 'gerente'];
+                                        return !excludedRoles.some(r => role.includes(r));
+                                    }).length === 0 && (
                                         <tr>
                                             <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                                                Nenhum colaborador cadastrado na aba Equipe.
+                                                Nenhum colaborador operacional cadastrado na aba Equipe.
                                             </td>
                                         </tr>
                                     )}
