@@ -174,6 +174,11 @@ create policy "Allow all operations for authenticated" on projects
 alter table transactions add column if not exists project_id uuid references projects(id);
 
 -- Add tax and labor allocation fields to projects table
-alter table projects add column if not exists tax_rate numeric default 0;
+alter table projects add column if not exists tax_rate numeric;
+alter table projects add column if not exists indirect_cost_rate numeric;
+alter table projects add column if not exists tool_kit text;
+alter table projects add column if not exists tool_usage_value numeric;
+alter table projects add column if not exists vehicle_usage_value numeric;
+alter table projects add column if not exists closing_date date;
 alter table projects add column if not exists labor_allocations jsonb default '[]'::jsonb;
 

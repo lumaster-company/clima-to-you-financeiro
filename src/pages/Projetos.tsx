@@ -8,6 +8,7 @@ const Projetos = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [projectName, setProjectName] = useState('');
+    const [projectDate, setProjectDate] = useState('');
 
     const filteredProjects = projects.filter(p => 
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -17,9 +18,11 @@ const Projetos = () => {
         if (project) {
             setEditingProject(project);
             setProjectName(project.name);
+            setProjectDate(project.closingDate || '');
         } else {
             setEditingProject(null);
             setProjectName('');
+            setProjectDate('');
         }
         setIsModalOpen(true);
     };
@@ -28,15 +31,16 @@ const Projetos = () => {
         setIsModalOpen(false);
         setEditingProject(null);
         setProjectName('');
+        setProjectDate('');
     };
 
     const handleSave = async () => {
         if (!projectName.trim()) return;
 
         if (editingProject) {
-            await updateProject(editingProject.id, projectName);
+            await updateProject(editingProject.id, projectName, projectDate || undefined);
         } else {
-            await addProject(projectName);
+            await addProject(projectName, projectDate || undefined);
         }
         handleCloseModal();
     };
@@ -98,7 +102,14 @@ const Projetos = () => {
                                     </button>
                                 </div>
                             </div>
-                            <h3 className="font-bold text-gray-800 text-lg line-clamp-2">{project.name}</h3>
+                            <div>
+                                <h3 className="font-bold text-gray-800 text-lg line-clamp-2 leading-tight">{project.name}</h3>
+                                {project.closingDate && (
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Fechamento: {new Date(project.closingDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     ))}
                     
@@ -139,6 +150,17 @@ const Projetos = () => {
                                         placeholder="Ex: Obra Maurício"
                                         className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none"
                                         autoFocus
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Data de Fechamento
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={projectDate}
+                                        onChange={(e) => setProjectDate(e.target.value)}
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none text-gray-700"
                                     />
                                 </div>
                             </div>

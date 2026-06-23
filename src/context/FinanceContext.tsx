@@ -34,6 +34,7 @@ export interface Project {
   toolUsageValue?: number;
   vehicleUsageValue?: number;
   laborAllocations?: ProjectLaborAllocation[];
+  closingDate?: string;
 }
 
 export interface FixedCost {
@@ -62,8 +63,8 @@ interface FinanceContextType {
   addFixedCost: (cost: Omit<FixedCost, 'id'>) => Promise<void>;
   removeFixedCost: (id: string) => Promise<void>;
   updateFixedCost: (id: string, updates: Partial<FixedCost>) => Promise<void>;
-  addProject: (name: string) => Promise<void>;
-  updateProject: (id: string, name: string) => Promise<void>;
+  addProject: (name: string, closingDate?: string) => Promise<void>;
+  updateProject: (id: string, name: string, closingDate?: string) => Promise<void>;
   updateProjectDetails: (id: string, taxRate: number, indirectCostRate: number, toolKit: string, toolUsageValue: number, vehicleUsageValue: number, laborAllocations: ProjectLaborAllocation[]) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
   addCategory: (type: TransactionType, category: string) => Promise<void>;
@@ -174,7 +175,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             toolKit: p.tool_kit || '',
             toolUsageValue: p.tool_usage_value ? parseFloat(p.tool_usage_value) : 0,
             vehicleUsageValue: p.vehicle_usage_value ? parseFloat(p.vehicle_usage_value) : 0,
-            laborAllocations: p.labor_allocations || []
+            laborAllocations: p.labor_allocations || [],
+            closingDate: p.closing_date
           }));
           setProjects(mappedProjects);
         }
@@ -369,17 +371,22 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   // Projects Management
-  const addProject = async (name: string) => {
+  const addProject = async (name: string, closingDate?: string) => {
     try {
+      const payload: any = { name };
+      if (closingDate) {
+        payload.closing_date = closingDate;
+      }
+      
       const { data, error } = await supabase
         .from('projects')
-        .insert([{ name }])
+        .insert([payload])
         .select()
         .single();
 
       if (error) throw error;
       if (data) {
-        setProjects(prev => [...prev, { id: data.id, name: data.name }]);
+        setProjects(prev => [...prev, { id: data.id, name: data.name, closingDate: data.closing_date }]);
       }
     } catch (error) {
       console.error('Error adding project:', error);
@@ -396,15 +403,20 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const updateProject = async (id: string, name: string) => {
+  const updateProject = async (id: string, name: string, closingDate?: string) => {
     try {
+      const payload: any = { name };
+      if (closingDate !== undefined) {
+        payload.closing_date = closingDate;
+      }
+
       const { error } = await supabase
         .from('projects')
-        .update({ name })
+        .update(payload)
         .eq('id', id);
 
       if (error) throw error;
-      setProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p));
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, name, ...(closingDate !== undefined ? { closingDate } : {}) } : p));
     } catch (error) {
       console.error('Error updating project:', error);
     }
@@ -428,6 +440,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       setProjects(prev => prev.map(p => p.id === id ? { ...p, taxRate, indirectCostRate, toolKit, toolUsageValue, vehicleUsageValue, laborAllocations } : p));
     } catch (error) {
       console.error('Error updating project details:', error);
+      throw error; // Bubble up so the UI catches it!
     }
   };
 
