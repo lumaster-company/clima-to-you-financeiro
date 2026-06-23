@@ -26,13 +26,14 @@ const GestaoProjetos = () => {
             // Update local state when a project is selected or when projects list updates
             const currentProject = projects.find(p => p.id === selectedProject.id);
             if (currentProject) {
-                setTaxRate(currentProject.taxRate || 0);
-                setIndirectCostRate(currentProject.indirectCostRate || 0);
+                setTaxRate(currentProject.taxRate ?? 7);
+                setIndirectCostRate(currentProject.indirectCostRate ?? 6);
                 
-                let parsedKit = { name: '', daily: 0, days: 0, vDaily: 0, vDays: 0 };
+                let parsedKit = { name: '', daily: 0, days: 0, vDaily: 50, vDays: 0 };
                 try {
                     if (currentProject.toolKit && currentProject.toolKit.startsWith('{')) {
-                        parsedKit = JSON.parse(currentProject.toolKit);
+                        const savedKit = JSON.parse(currentProject.toolKit);
+                        parsedKit = { ...parsedKit, ...savedKit };
                     } else {
                         parsedKit.name = currentProject.toolKit || '';
                         // Fallback logic for legacy total value
@@ -62,9 +63,9 @@ const GestaoProjetos = () => {
     const handleKitChange = (kit: string) => {
         setToolKitName(kit);
         if (kit === 'Kit Padrão') {
-            setToolDailyValue(150); // Valor sugerido
+            setToolDailyValue(30); // Valor sugerido
         } else if (kit === 'Kit Completo') {
-            setToolDailyValue(350); // Valor sugerido
+            setToolDailyValue(60); // Valor sugerido
         }
     };
 
