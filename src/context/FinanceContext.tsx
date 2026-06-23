@@ -29,6 +29,10 @@ export interface Project {
   id: string;
   name: string;
   taxRate?: number;
+  indirectCostRate?: number;
+  toolKit?: string;
+  toolUsageValue?: number;
+  vehicleUsageValue?: number;
   laborAllocations?: ProjectLaborAllocation[];
 }
 
@@ -60,7 +64,7 @@ interface FinanceContextType {
   updateFixedCost: (id: string, updates: Partial<FixedCost>) => Promise<void>;
   addProject: (name: string) => Promise<void>;
   updateProject: (id: string, name: string) => Promise<void>;
-  updateProjectDetails: (id: string, taxRate: number, laborAllocations: ProjectLaborAllocation[]) => Promise<void>;
+  updateProjectDetails: (id: string, taxRate: number, indirectCostRate: number, toolKit: string, toolUsageValue: number, vehicleUsageValue: number, laborAllocations: ProjectLaborAllocation[]) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
   addCategory: (type: TransactionType, category: string) => Promise<void>;
   removeCategory: (type: TransactionType, category: string) => Promise<void>;
@@ -166,6 +170,10 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             id: p.id,
             name: p.name,
             taxRate: p.tax_rate ? parseFloat(p.tax_rate) : 0,
+            indirectCostRate: p.indirect_cost_rate ? parseFloat(p.indirect_cost_rate) : 0,
+            toolKit: p.tool_kit || '',
+            toolUsageValue: p.tool_usage_value ? parseFloat(p.tool_usage_value) : 0,
+            vehicleUsageValue: p.vehicle_usage_value ? parseFloat(p.vehicle_usage_value) : 0,
             laborAllocations: p.labor_allocations || []
           }));
           setProjects(mappedProjects);
@@ -402,15 +410,22 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const updateProjectDetails = async (id: string, taxRate: number, laborAllocations: ProjectLaborAllocation[]) => {
+  const updateProjectDetails = async (id: string, taxRate: number, indirectCostRate: number, toolKit: string, toolUsageValue: number, vehicleUsageValue: number, laborAllocations: ProjectLaborAllocation[]) => {
     try {
       const { error } = await supabase
         .from('projects')
-        .update({ tax_rate: taxRate, labor_allocations: laborAllocations })
+        .update({ 
+          tax_rate: taxRate, 
+          indirect_cost_rate: indirectCostRate,
+          tool_kit: toolKit,
+          tool_usage_value: toolUsageValue,
+          vehicle_usage_value: vehicleUsageValue,
+          labor_allocations: laborAllocations 
+        })
         .eq('id', id);
 
       if (error) throw error;
-      setProjects(prev => prev.map(p => p.id === id ? { ...p, taxRate, laborAllocations } : p));
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, taxRate, indirectCostRate, toolKit, toolUsageValue, vehicleUsageValue, laborAllocations } : p));
     } catch (error) {
       console.error('Error updating project details:', error);
     }

@@ -12,6 +12,10 @@ const GestaoProjetos = () => {
 
     // Detail view states
     const [taxRate, setTaxRate] = useState<number>(0);
+    const [indirectCostRate, setIndirectCostRate] = useState<number>(0);
+    const [toolKit, setToolKit] = useState<string>('');
+    const [toolUsageValue, setToolUsageValue] = useState<number>(0);
+    const [vehicleUsageValue, setVehicleUsageValue] = useState<number>(0);
     const [laborAllocations, setLaborAllocations] = useState<{employeeId: string, daysWorked: number}[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -21,6 +25,10 @@ const GestaoProjetos = () => {
             const currentProject = projects.find(p => p.id === selectedProject.id);
             if (currentProject) {
                 setTaxRate(currentProject.taxRate || 0);
+                setIndirectCostRate(currentProject.indirectCostRate || 0);
+                setToolKit(currentProject.toolKit || '');
+                setToolUsageValue(currentProject.toolUsageValue || 0);
+                setVehicleUsageValue(currentProject.vehicleUsageValue || 0);
                 setLaborAllocations(currentProject.laborAllocations || []);
                 setSelectedProject(currentProject); // Keep reference updated
             }
@@ -31,7 +39,7 @@ const GestaoProjetos = () => {
         if (!selectedProject) return;
         setIsSaving(true);
         try {
-            await updateProjectDetails(selectedProject.id, taxRate, laborAllocations);
+            await updateProjectDetails(selectedProject.id, taxRate, indirectCostRate, toolKit, toolUsageValue, vehicleUsageValue, laborAllocations);
             alert('Configurações do projeto salvas com sucesso!');
         } catch (error) {
             console.error(error);
@@ -80,8 +88,10 @@ const GestaoProjetos = () => {
             });
 
             const impostoEstimado = totalEntradas * ((project.taxRate || 0) / 100);
+            const custosIndiretos = totalEntradas * ((project.indirectCostRate || 0) / 100);
+            const custosAtivos = (project.toolUsageValue || 0) + (project.vehicleUsageValue || 0);
 
-            const lucroReal = totalEntradas - totalSaidas - custoMaoDeObra - impostoEstimado;
+            const lucroReal = totalEntradas - totalSaidas - custoMaoDeObra - impostoEstimado - custosIndiretos - custosAtivos;
             const margem = totalEntradas > 0 ? (lucroReal / totalEntradas) * 100 : 0;
 
             return {
@@ -90,6 +100,8 @@ const GestaoProjetos = () => {
                 totalSaidas,
                 custoMaoDeObra,
                 impostoEstimado,
+                custosIndiretos,
+                custosAtivos,
                 lucroReal,
                 margem
             };
@@ -113,7 +125,10 @@ const GestaoProjetos = () => {
         });
 
         const impostoEstimadoLocal = receitaTotal * (taxRate / 100);
-        const lucroRealLocal = receitaTotal - custoDireto - custoMaoDeObraLocal - impostoEstimadoLocal;
+        const custosIndiretosLocal = receitaTotal * (indirectCostRate / 100);
+        const custosAtivosLocal = toolUsageValue + vehicleUsageValue;
+        
+        const lucroRealLocal = receitaTotal - custoDireto - custoMaoDeObraLocal - impostoEstimadoLocal - custosIndiretosLocal - custosAtivosLocal;
         const margemLocal = receitaTotal > 0 ? (lucroRealLocal / receitaTotal) * 100 : 0;
 
         return (
@@ -147,9 +162,9 @@ const GestaoProjetos = () => {
                         <TrendingUp className="text-[#442685] w-5 h-5" /> 
                         Painel de Resultado (Tempo Real)
                     </h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-8 gap-4">
                         <div className="bg-green-50/50 p-4 rounded-lg border border-green-100">
-                            <div className="text-green-600 text-xs font-bold uppercase mb-1">Receita Total</div>
+                            <div className="text-green-600 text-[11px] font-bold uppercase mb-1">Receita Total</div>
                             <div className="text-lg font-bold text-green-700">{formatCurrency(receitaTotal)}</div>
                         </div>
                         <div className="bg-red-50/50 p-4 rounded-lg border border-red-100">
@@ -164,6 +179,14 @@ const GestaoProjetos = () => {
                             <div className="text-purple-600 text-[11px] font-bold uppercase mb-1">(-) Impostos</div>
                             <div className="text-lg font-bold text-purple-700">{formatCurrency(impostoEstimadoLocal)}</div>
                         </div>
+                        <div className="bg-pink-50/50 p-4 rounded-lg border border-pink-100">
+                            <div className="text-pink-600 text-[11px] font-bold uppercase mb-1">(-) Indiretos</div>
+                            <div className="text-lg font-bold text-pink-700">{formatCurrency(custosIndiretosLocal)}</div>
+                        </div>
+                        <div className="bg-teal-50/50 p-4 rounded-lg border border-teal-100">
+                            <div className="text-teal-600 text-[11px] font-bold uppercase mb-1">(-) Ativos</div>
+                            <div className="text-lg font-bold text-teal-700">{formatCurrency(custosAtivosLocal)}</div>
+                        </div>
                         <div className={`p-4 rounded-lg border ${lucroRealLocal >= 0 ? 'bg-blue-50/50 border-blue-100' : 'bg-red-50 border-red-200'}`}>
                             <div className={`text-[11px] font-bold uppercase mb-1 ${lucroRealLocal >= 0 ? 'text-blue-600' : 'text-red-600'}`}>(=) Lucro Real</div>
                             <div className={`text-lg font-bold ${lucroRealLocal >= 0 ? 'text-blue-700' : 'text-red-700'}`}>{formatCurrency(lucroRealLocal)}</div>
@@ -176,30 +199,87 @@ const GestaoProjetos = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Alíquota de Imposto */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit">
-                        <div className="flex items-center gap-2 mb-6 text-[#442685]">
-                            <FileText size={20} />
-                            <h3 className="font-bold text-lg">Impostos e Deduções</h3>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Alíquota de Imposto (%)</label>
-                                <div className="relative">
-                                    <input 
-                                        type="number"
-                                        value={taxRate || ''}
-                                        onChange={e => setTaxRate(parseFloat(e.target.value) || 0)}
-                                        placeholder="0"
-                                        className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
-                                    />
-                                    <Percent className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    {/* Painéis Laterais: Impostos e Custos Operacionais */}
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <div className="flex items-center gap-2 mb-6 text-[#442685]">
+                                <FileText size={20} />
+                                <h3 className="font-bold text-lg">Impostos e Deduções</h3>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Alíquota de Imposto (%)</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="number"
+                                            value={taxRate || ''}
+                                            onChange={e => setTaxRate(parseFloat(e.target.value) || 0)}
+                                            placeholder="0"
+                                            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                        />
+                                        <Percent className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Custos Indiretos (BDI/ADM) (%)</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="number"
+                                            value={indirectCostRate || ''}
+                                            onChange={e => setIndirectCostRate(parseFloat(e.target.value) || 0)}
+                                            placeholder="0"
+                                            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                        />
+                                        <Percent className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    </div>
+                                </div>
+                                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mt-4">
+                                    <p className="text-xs text-blue-800">
+                                        Valores calculados automaticamente sobre a Receita Total da obra e descontados no Lucro Real.
+                                    </p>
                                 </div>
                             </div>
-                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                <p className="text-xs text-blue-800">
-                                    Calculado automaticamente sobre a Receita Total da obra. Este valor será descontado no cálculo do Lucro Real.
-                                </p>
+                        </div>
+
+                        {/* Custos Operacionais Adicionais */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <div className="flex items-center gap-2 mb-6 text-[#442685]">
+                                <Briefcase size={20} />
+                                <h3 className="font-bold text-lg">Custos Operacionais Adicionais</h3>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kit Ferramentas</label>
+                                    <select 
+                                        value={toolKit}
+                                        onChange={e => setToolKit(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all bg-white"
+                                    >
+                                        <option value="">Selecione um Kit</option>
+                                        <option value="Kit Padrão">Kit Padrão</option>
+                                        <option value="Kit Completo">Kit Completo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Valor Ferramentas (R$)</label>
+                                    <input 
+                                        type="number"
+                                        value={toolUsageValue || ''}
+                                        onChange={e => setToolUsageValue(parseFloat(e.target.value) || 0)}
+                                        placeholder="0,00"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Veículo (R$)</label>
+                                    <input 
+                                        type="number"
+                                        value={vehicleUsageValue || ''}
+                                        onChange={e => setVehicleUsageValue(parseFloat(e.target.value) || 0)}
+                                        placeholder="0,00"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#442685]/20 focus:border-[#442685] outline-none transition-all"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -323,8 +403,8 @@ const GestaoProjetos = () => {
 
                                 <div className="bg-red-50/50 p-2 rounded-lg border border-red-100 text-center">
                                     <div className="text-[10px] font-bold uppercase text-red-600 mb-1">Custos</div>
-                                    <div className="font-bold text-red-700 text-sm" title="Direto + Mão de Obra + Impostos">
-                                        {formatCurrency(stats.totalSaidas + stats.custoMaoDeObra + stats.impostoEstimado)}
+                                    <div className="font-bold text-red-700 text-sm" title="Direto + Mão de Obra + Impostos + Indiretos + Ativos">
+                                        {formatCurrency(stats.totalSaidas + stats.custoMaoDeObra + stats.impostoEstimado + stats.custosIndiretos + stats.custosAtivos)}
                                     </div>
                                 </div>
 
