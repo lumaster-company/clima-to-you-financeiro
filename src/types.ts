@@ -14,5 +14,6 @@ export interface Employee {
         otherBenefits?: number; // legacy
         vtDiscount?: boolean;
         bonuses?: number;
+        lucroRetirada?: number;
     };
 }

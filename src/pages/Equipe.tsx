@@ -22,6 +22,7 @@ const Equipe = () => {
     const [internet, setInternet] = useState('');
     const [vtDiscount, setVtDiscount] = useState(false);
     const [bonuses, setBonuses] = useState('');
+    const [lucroRetirada, setLucroRetirada] = useState('');
 
     const handleOpenModal = (employee?: Employee) => {
         if (employee) {
@@ -38,6 +39,7 @@ const Equipe = () => {
             setInternet(employee.financials?.internet?.toString() || '');
             setVtDiscount(employee.financials?.vtDiscount || false);
             setBonuses(employee.financials?.bonuses?.toString() || '');
+            setLucroRetirada(employee.financials?.lucroRetirada?.toString() || '');
         } else {
             setEditingEmployee(null);
             setName('');
@@ -52,6 +54,7 @@ const Equipe = () => {
             setInternet('');
             setVtDiscount(false);
             setBonuses('');
+            setLucroRetirada('');
         }
         setIsModalOpen(true);
     };
@@ -75,6 +78,7 @@ const Equipe = () => {
                 internet: Number(internet) || 0,
                 vtDiscount,
                 bonuses: Number(bonuses) || 0,
+                lucroRetirada: Number(lucroRetirada) || 0,
             },
         };
 
@@ -155,6 +159,15 @@ const Equipe = () => {
                                         R$ {employee.financials.salary.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </span>
                                 </div>
+
+                                {employee.type === 'Sócio' && employee.financials.lucroRetirada ? (
+                                    <div className="flex justify-between items-center text-sm mt-1">
+                                        <span className="text-gray-500">Retirada de Lucro</span>
+                                        <span className="font-semibold text-gray-700">
+                                            + R$ {employee.financials.lucroRetirada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                ) : null}
 
                                 {employee.type === 'CLT' && (
                                     <>
@@ -324,6 +337,23 @@ const Equipe = () => {
                                 </div>
                             </div>
 
+                            {type === 'Sócio' && (
+                                <div className="grid grid-cols-2 gap-4 mt-4 animate-in fade-in slide-in-from-top-2">
+                                    <div className="col-span-2 sm:col-span-1">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Retirada de Lucro (R$)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={lucroRetirada}
+                                            onChange={(e) => setLucroRetirada(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                            placeholder="0,00"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             {type === 'CLT' && (
                                 <div className="space-y-4 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
@@ -422,14 +452,16 @@ const Equipe = () => {
                             )}
 
                             {type === 'Sócio' && (
-                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 animate-in fade-in slide-in-from-top-2">
+                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 animate-in fade-in slide-in-from-top-2 mt-4">
                                     <h4 className="text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2">
                                         <UserCheck className="w-4 h-4" />
                                         Resumo do Sócio
                                     </h4>
                                     <p className="text-xs text-purple-600 mb-1">
-                                        O custo para a empresa é exatamente o valor do <strong>Pró-labore Bruto</strong>.
-                                        O INSS e IRRF são descontados deste valor no momento do pagamento ao sócio.
+                                        <strong>Custo Total = Pró-labore + Retirada de Lucro</strong>.
+                                    </p>
+                                    <p className="text-xs text-purple-600">
+                                        O INSS (11%) é calculado apenas sobre o pró-labore bruto. A retirada de lucro não sofre incidência de impostos ou outros encargos tributários.
                                     </p>
                                 </div>
                             )}

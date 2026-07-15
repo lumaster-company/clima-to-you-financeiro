@@ -27,12 +27,15 @@ export const calculateDetailedEmployeeCost = (emp: Employee) => {
 
     if (emp.type === 'Sócio') {
         const inss = baseSalary * 0.11;
+        const lucroRetirada = financials.lucroRetirada || 0;
+        const total = baseSalary + lucroRetirada;
         return {
-            monthlyCash: baseSalary, // Same as cost for partner
-            realCost: baseSalary,
+            monthlyCash: total, // Same as cost for partner
+            realCost: total,
             details: {
                 inss,
-                totalRemuneration: baseSalary // Added for consistency
+                totalRemuneration: total, // Added for consistency
+                lucroRetirada
             }
         };
     }
