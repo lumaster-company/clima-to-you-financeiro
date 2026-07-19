@@ -15,7 +15,7 @@ export interface WorkingCapitalTransfer {
   reason?: string;
   origin_account_id?: string;
   destination_account_id?: string;
-  date: string;
+  transfer_date: string;
 }
 
 interface CapitalGiroContextType {
@@ -45,9 +45,9 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
         if (accError) throw accError;
         if (accData) setAccounts(accData.map(a => ({ id: a.id, name: a.name, type: a.type, balance: parseFloat(a.balance) })));
 
-        const { data: transData, error: transError } = await supabase.from('financial_transfers').select('*').order('date', { ascending: false }).order('created_at', { ascending: false });
+        const { data: transData, error: transError } = await supabase.from('financial_transfers').select('*').order('transfer_date', { ascending: false }).order('created_at', { ascending: false });
         if (transError) throw transError;
-        if (transData) setTransfers(transData.map(t => ({ id: t.id, type: t.type, amount: parseFloat(t.amount), reason: t.reason, origin_account_id: t.origin_account_id, destination_account_id: t.destination_account_id, date: t.date })));
+        if (transData) setTransfers(transData.map(t => ({ id: t.id, type: t.type, amount: parseFloat(t.amount), reason: t.reason, origin_account_id: t.origin_account_id, destination_account_id: t.destination_account_id, transfer_date: t.transfer_date })));
 
         const { data: setData, error: setError } = await supabase.from('financial_settings').select('*').limit(1).maybeSingle();
         if (setError && setError.code !== 'PGRST116') throw setError; 
@@ -96,7 +96,7 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
       }
 
       if (data) {
-        setTransfers(prev => [{ id: data.id, type: data.type, amount: parseFloat(data.amount), reason: data.reason, origin_account_id: data.origin_account_id, destination_account_id: data.destination_account_id, date: data.date }, ...prev]);
+        setTransfers(prev => [{ id: data.id, type: data.type, amount: parseFloat(data.amount), reason: data.reason, origin_account_id: data.origin_account_id, destination_account_id: data.destination_account_id, transfer_date: data.transfer_date }, ...prev]);
         
         let newAccounts = [...accounts];
         

@@ -76,7 +76,7 @@ const CapitalGiro = () => {
             type: transType,
             amount: Number(transAmount),
             reason: transReason,
-            date: new Date().toISOString().split('T')[0],
+            transfer_date: new Date().toISOString(),
             origin_account_id: transType === 'Resgate' || transType === 'Transferência' ? originAcc : undefined,
             destination_account_id: transType === 'Aporte' || transType === 'Transferência' ? destAcc : undefined,
         };
@@ -206,7 +206,7 @@ const CapitalGiro = () => {
                                     return (
                                         <tr key={t.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4">
-                                                {new Date(t.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                                {new Date(t.transfer_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${

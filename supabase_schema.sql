@@ -205,7 +205,7 @@ create table if not exists financial_transfers (
   reason text,
   origin_account_id uuid references financial_accounts(id),
   destination_account_id uuid references financial_accounts(id),
-  date date not null,
+  transfer_date timestamp with time zone default now() not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
