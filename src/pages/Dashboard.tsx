@@ -41,6 +41,7 @@ const Dashboard = () => {
     const monthlyFixedCost = totalFixed + totalTeamCost;
     const reserveBalance = accounts.reduce((acc, curr) => acc + curr.balance, 0);
     const coverageMonths = monthlyFixedCost > 0 ? (reserveBalance / monthlyFixedCost) : 0;
+    const availableBalance = balance - reserveBalance;
     
     const getHealthColor = () => {
         if (coverageMonths > 3) return 'bg-green-500 text-white';
@@ -147,6 +148,31 @@ const Dashboard = () => {
                         <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm text-sm font-medium text-blue-700 bg-blue-50/50">
                             <CalendarDays size={16} />
                             <span>Exercício 2026 – Operacional</span>
+                        </div>
+                    </div>
+
+                    {/* Saldo Disponível Operacional (Destaque Principal) */}
+                    <div className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-8 rounded-2xl shadow-sm border-2 border-indigo-100 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+                            <DollarSign size={120} />
+                        </div>
+                        <div className="relative z-10 flex justify-between items-start">
+                            <div>
+                                <p className="text-sm font-bold text-indigo-800 uppercase tracking-wider mb-2">Saldo Disponível Operacional</p>
+                                <h3 className={`text-5xl font-extrabold tracking-tight ${availableBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                                    {formatCurrency(availableBalance)}
+                                </h3>
+                                <p className="text-sm text-gray-500 mt-4 flex items-center gap-1.5">
+                                    <span className="inline-block w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>
+                                    <span>Base para decisão de gastos operacionais.</span>
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1 pl-3">
+                                    * Cálculo: Resultado Líquido contábil ({formatCurrency(balance)}) deduzido da Reserva de Capital de Giro ({formatCurrency(reserveBalance)}).
+                                </p>
+                            </div>
+                            <div className="p-4 bg-white rounded-2xl shadow-sm border border-indigo-50 text-indigo-600">
+                                <Landmark size={32} />
+                            </div>
                         </div>
                     </div>
 
