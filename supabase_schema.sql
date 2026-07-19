@@ -182,3 +182,46 @@ alter table projects add column if not exists vehicle_usage_value numeric;
 alter table projects add column if not exists closing_date date;
 alter table projects add column if not exists labor_allocations jsonb default '[]'::jsonb;
 
+--------------------------------------------------------------------------------
+-- 9. Working Capital (Capital de Giro) Tables
+--------------------------------------------------------------------------------
+create table if not exists working_capital_accounts (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  type text not null,
+  balance numeric default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table working_capital_accounts enable row level security;
+drop policy if exists "Allow all operations for authenticated" on working_capital_accounts;
+create policy "Allow all operations for authenticated" on working_capital_accounts
+  for all to authenticated using (true) with check (true);
+
+create table if not exists working_capital_transfers (
+  id uuid default uuid_generate_v4() primary key,
+  type text check (type in ('Aporte', 'Resgate', 'Transferência')) not null,
+  amount numeric not null,
+  reason text,
+  origin_account_id uuid references working_capital_accounts(id),
+  destination_account_id uuid references working_capital_accounts(id),
+  date date not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table working_capital_transfers enable row level security;
+drop policy if exists "Allow all operations for authenticated" on working_capital_transfers;
+create policy "Allow all operations for authenticated" on working_capital_transfers
+  for all to authenticated using (true) with check (true);
+
+create table if not exists working_capital_settings (
+  id uuid default uuid_generate_v4() primary key,
+  global_goal numeric default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table working_capital_settings enable row level security;
+drop policy if exists "Allow all operations for authenticated" on working_capital_settings;
+create policy "Allow all operations for authenticated" on working_capital_settings
+  for all to authenticated using (true) with check (true);
+

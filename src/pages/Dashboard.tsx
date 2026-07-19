@@ -1,24 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { useContracts } from '../context/ContractContext';
+import { useCapitalGiro } from '../context/CapitalGiroContext';
+import { useTeam } from '../context/TeamContext';
+import { calculateDetailedEmployeeCost } from '../utils/financeUtils';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
-import { DollarSign, TrendingUp, TrendingDown, Activity, CalendarDays } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, CalendarDays, Landmark } from 'lucide-react';
 import HistoricalBI from '../components/finance/HistoricalBI';
 import { CategoryAnalysis } from '../components/finance/CategoryAnalysis';
 
 const Dashboard = () => {
     const {
-        filteredTransactions, // Use this for charts
+        filteredTransactions,
         income,
         expenses,
         balance,
         selectedYear,
-        setSelectedYear
+        setSelectedYear,
+        fixedCosts
     } = useFinance();
     const { getMRR, getActiveContractsCount } = useContracts();
+    const { accounts } = useCapitalGiro();
+    const { employees } = useTeam();
 
     const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
 
@@ -28,6 +34,19 @@ const Dashboard = () => {
             setSelectedYear('2026');
         }
     }, [activeTab, setSelectedYear]);
+
+    // --- Working Capital Health Calculation ---
+    const totalFixed = fixedCosts.reduce((acc, curr) => acc + curr.amount, 0);
+    const totalTeamCost = employees.reduce((acc, emp) => acc + calculateDetailedEmployeeCost(emp).monthlyCash, 0);
+    const monthlyFixedCost = totalFixed + totalTeamCost;
+    const reserveBalance = accounts.reduce((acc, curr) => acc + curr.balance, 0);
+    const coverageMonths = monthlyFixedCost > 0 ? (reserveBalance / monthlyFixedCost) : 0;
+    
+    const getHealthColor = () => {
+        if (coverageMonths > 3) return 'bg-green-500 text-white';
+        if (coverageMonths >= 1) return 'bg-yellow-500 text-white';
+        return 'bg-red-500 text-white';
+    };
 
     // --- Contracts Data ---
     const mrr = getMRR();
@@ -117,7 +136,14 @@ const Dashboard = () => {
 
             {activeTab === 'current' ? (
                 <div className="space-y-8">
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            {/* Working Capital Health Indicator */}
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full shadow-sm text-sm font-medium transition-all ${getHealthColor()}`} title={`Cobertura atual: ${coverageMonths.toFixed(1)} meses`}>
+                                <Landmark size={14} />
+                                <span>Giro: {coverageMonths.toFixed(1)}m</span>
+                            </div>
+                        </div>
                         <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm text-sm font-medium text-blue-700 bg-blue-50/50">
                             <CalendarDays size={16} />
                             <span>Exercício 2026 – Operacional</span>
