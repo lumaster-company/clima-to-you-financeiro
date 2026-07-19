@@ -41,15 +41,15 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const { data: accData, error: accError } = await supabase.from('working_capital_accounts').select('*');
+        const { data: accData, error: accError } = await supabase.from('financial_accounts').select('*');
         if (accError) throw accError;
         if (accData) setAccounts(accData.map(a => ({ id: a.id, name: a.name, type: a.type, balance: parseFloat(a.balance) })));
 
-        const { data: transData, error: transError } = await supabase.from('working_capital_transfers').select('*').order('date', { ascending: false }).order('created_at', { ascending: false });
+        const { data: transData, error: transError } = await supabase.from('financial_transfers').select('*').order('date', { ascending: false }).order('created_at', { ascending: false });
         if (transError) throw transError;
         if (transData) setTransfers(transData.map(t => ({ id: t.id, type: t.type, amount: parseFloat(t.amount), reason: t.reason, origin_account_id: t.origin_account_id, destination_account_id: t.destination_account_id, date: t.date })));
 
-        const { data: setData, error: setError } = await supabase.from('working_capital_settings').select('*').limit(1).maybeSingle();
+        const { data: setData, error: setError } = await supabase.from('financial_settings').select('*').limit(1).maybeSingle();
         if (setError && setError.code !== 'PGRST116') throw setError; 
         if (setData) setGlobalGoal(parseFloat(setData.global_goal));
       } catch (error) {
@@ -63,7 +63,7 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const addAccount = async (name: string, type: string, initialBalance: number = 0) => {
     try {
-      const { data, error } = await supabase.from('working_capital_accounts').insert([{ name, type, balance: initialBalance }]).select().single();
+      const { data, error } = await supabase.from('financial_accounts').insert([{ name, type, balance: initialBalance }]).select().single();
       if (error) {
         console.error("Supabase insert error:", error);
         throw error;
@@ -79,7 +79,7 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const updateAccount = async (id: string, updates: Partial<WorkingCapitalAccount>) => {
     try {
-      const { error } = await supabase.from('working_capital_accounts').update(updates).eq('id', id);
+      const { error } = await supabase.from('financial_accounts').update(updates).eq('id', id);
       if (error) throw error;
       setAccounts(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
     } catch (e) {
@@ -89,7 +89,7 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const registerTransfer = async (transfer: Omit<WorkingCapitalTransfer, 'id'>) => {
     try {
-      const { data, error } = await supabase.from('working_capital_transfers').insert([transfer]).select().single();
+      const { data, error } = await supabase.from('financial_transfers').insert([transfer]).select().single();
       if (error) {
         console.error("Supabase insert error (transfer):", error);
         throw error;
@@ -104,7 +104,7 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
           const accIndex = newAccounts.findIndex(a => a.id === transfer.origin_account_id);
           if (accIndex !== -1) {
             const newBal = newAccounts[accIndex].balance - transfer.amount;
-            await supabase.from('working_capital_accounts').update({ balance: newBal }).eq('id', transfer.origin_account_id);
+            await supabase.from('financial_accounts').update({ balance: newBal }).eq('id', transfer.origin_account_id);
             newAccounts[accIndex] = { ...newAccounts[accIndex], balance: newBal };
           }
         }
@@ -112,7 +112,7 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
           const accIndex = newAccounts.findIndex(a => a.id === transfer.destination_account_id);
           if (accIndex !== -1) {
             const newBal = newAccounts[accIndex].balance + transfer.amount;
-            await supabase.from('working_capital_accounts').update({ balance: newBal }).eq('id', transfer.destination_account_id);
+            await supabase.from('financial_accounts').update({ balance: newBal }).eq('id', transfer.destination_account_id);
             newAccounts[accIndex] = { ...newAccounts[accIndex], balance: newBal };
           }
         }
@@ -127,11 +127,11 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const updateGlobalGoal = async (goal: number) => {
     try {
-      const { data: currentData } = await supabase.from('working_capital_settings').select('id').limit(1).maybeSingle();
+      const { data: currentData } = await supabase.from('financial_settings').select('id').limit(1).maybeSingle();
       if (currentData) {
-        await supabase.from('working_capital_settings').update({ global_goal: goal }).eq('id', currentData.id);
+        await supabase.from('financial_settings').update({ global_goal: goal }).eq('id', currentData.id);
       } else {
-        await supabase.from('working_capital_settings').insert([{ global_goal: goal }]);
+        await supabase.from('financial_settings').insert([{ global_goal: goal }]);
       }
       setGlobalGoal(goal);
     } catch (e) {
