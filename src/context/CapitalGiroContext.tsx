@@ -30,7 +30,6 @@ interface CapitalGiroContextType {
   updateTransfer: (id: string, updates: Partial<WorkingCapitalTransfer>) => Promise<void>;
   deleteTransfer: (id: string) => Promise<void>;
   updateGlobalGoal: (goal: number) => Promise<void>;
-  updateGlobalGoal: (goal: number) => Promise<void>;
 }
 
 const CapitalGiroContext = createContext<CapitalGiroContextType | undefined>(undefined);
