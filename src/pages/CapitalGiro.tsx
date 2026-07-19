@@ -3,10 +3,11 @@ import { useCapitalGiro } from '../context/CapitalGiroContext';
 import { useFinance } from '../context/FinanceContext';
 import { useTeam } from '../context/TeamContext';
 import { calculateDetailedEmployeeCost } from '../utils/financeUtils';
-import { Landmark, ArrowUpCircle, ArrowDownCircle, ArrowRightLeft, Plus, Settings } from 'lucide-react';
+import { Landmark, ArrowUpCircle, ArrowDownCircle, ArrowRightLeft, Plus, Settings, Pencil, Trash2 } from 'lucide-react';
+import type { WorkingCapitalAccount, WorkingCapitalTransfer } from '../context/CapitalGiroContext';
 
 const CapitalGiro = () => {
-    const { accounts, transfers, globalGoal, updateGlobalGoal, addAccount, registerTransfer } = useCapitalGiro();
+    const { accounts, transfers, globalGoal, updateGlobalGoal, addAccount, updateAccount, deleteAccount, registerTransfer, updateTransfer, deleteTransfer } = useCapitalGiro();
     const { fixedCosts } = useFinance();
     const { employees } = useTeam();
 
@@ -24,6 +25,9 @@ const CapitalGiro = () => {
     const [transReason, setTransReason] = useState('');
     const [originAcc, setOriginAcc] = useState('');
     const [destAcc, setDestAcc] = useState('');
+
+    const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+    const [editingTransferId, setEditingTransferId] = useState<string | null>(null);
 
     // Set defaults when opening transfer modal
     useEffect(() => {
@@ -62,12 +66,34 @@ const CapitalGiro = () => {
     const handleAccountSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await addAccount(accName, accType, Number(accBal) || 0);
+            if (editingAccountId) {
+                await updateAccount(editingAccountId, { name: accName, type: accType, balance: Number(accBal) || 0 });
+            } else {
+                await addAccount(accName, accType, Number(accBal) || 0);
+            }
             setAccName(''); setAccType('Conta Corrente'); setAccBal('');
+            setEditingAccountId(null);
             setIsAccountModalOpen(false);
         } catch (error) {
-            alert('Falha ao adicionar conta. Verifique se o banco de dados (tabelas e RLS) foi atualizado corretamente e tente novamente.');
+            alert('Falha ao salvar conta. Verifique se o banco de dados (tabelas e RLS) foi atualizado corretamente e tente novamente.');
         }
+    };
+
+    const handleDeleteAccount = async (id: string) => {
+        if (!window.confirm('Tem certeza que deseja excluir esta conta? Isso só será possível se não houver movimentações vinculadas a ela.')) return;
+        try {
+            await deleteAccount(id);
+        } catch (error) {
+            alert('Não foi possível excluir a conta. Ela provavelmente possui transferências ou aportes vinculados.');
+        }
+    };
+
+    const openEditAccount = (acc: WorkingCapitalAccount) => {
+        setEditingAccountId(acc.id);
+        setAccName(acc.name);
+        setAccType(acc.type);
+        setAccBal(acc.balance.toString());
+        setIsAccountModalOpen(true);
     };
 
     const handleTransferSubmit = async (e: React.FormEvent) => {
@@ -81,12 +107,36 @@ const CapitalGiro = () => {
             destination_account_id: transType === 'Aporte' || transType === 'Transferência' ? destAcc : undefined,
         };
         try {
-            await registerTransfer(transferPayload);
+            if (editingTransferId) {
+                await updateTransfer(editingTransferId, { amount: Number(transAmount), reason: transReason });
+            } else {
+                await registerTransfer(transferPayload);
+            }
             setIsTransferModalOpen(false);
             setTransAmount(''); setTransReason('');
+            setEditingTransferId(null);
         } catch (error) {
-            alert('Falha ao registrar movimentação. Verifique o console ou as permissões do banco.');
+            alert('Falha ao registrar/atualizar movimentação. Verifique o console ou as permissões do banco.');
         }
+    };
+
+    const handleDeleteTransfer = async (id: string) => {
+        if (!window.confirm('Tem certeza que deseja cancelar e excluir esta movimentação? Os saldos das contas serão revertidos.')) return;
+        try {
+            await deleteTransfer(id);
+        } catch (error) {
+            alert('Não foi possível excluir a movimentação.');
+        }
+    };
+
+    const openEditTransfer = (t: WorkingCapitalTransfer) => {
+        setEditingTransferId(t.id);
+        setTransType(t.type);
+        setTransAmount(t.amount.toString());
+        setTransReason(t.reason || '');
+        setOriginAcc(t.origin_account_id || '');
+        setDestAcc(t.destination_account_id || '');
+        setIsTransferModalOpen(true);
     };
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -157,12 +207,22 @@ const CapitalGiro = () => {
                             <p className="text-sm text-gray-400 text-center py-2">Nenhuma conta cadastrada</p>
                         ) : (
                             accounts.map(acc => (
-                                <div key={acc.id} className="flex justify-between items-center p-2 rounded-lg bg-gray-50">
+                                <div key={acc.id} className="flex justify-between items-center p-2 rounded-lg bg-gray-50 group hover:bg-gray-100 transition-colors">
                                     <div>
                                         <p className="text-sm font-medium text-gray-800">{acc.name}</p>
                                         <p className="text-xs text-gray-500">{acc.type}</p>
                                     </div>
-                                    <span className="font-bold text-gray-900 text-sm">{formatCurrency(acc.balance)}</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-gray-900 text-sm">{formatCurrency(acc.balance)}</span>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => openEditAccount(acc)} className="text-gray-400 hover:text-indigo-600 p-1 rounded transition-colors" title="Editar">
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button onClick={() => handleDeleteAccount(acc.id)} className="text-gray-400 hover:text-red-600 p-1 rounded transition-colors" title="Excluir">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             ))
                         )}
@@ -187,6 +247,7 @@ const CapitalGiro = () => {
                                 <th className="px-6 py-4">Detalhes</th>
                                 <th className="px-6 py-4">Motivo</th>
                                 <th className="px-6 py-4 text-right">Valor</th>
+                                <th className="px-6 py-4 text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -204,7 +265,7 @@ const CapitalGiro = () => {
                                     else details = `${orig} ➔ ${dest}`;
 
                                     return (
-                                        <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={t.id} className="hover:bg-gray-50 transition-colors group">
                                             <td className="px-6 py-4">
                                                 {new Date(t.transfer_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                                             </td>
@@ -224,6 +285,16 @@ const CapitalGiro = () => {
                                             }`}>
                                                 {t.type === 'Resgate' ? '-' : t.type === 'Aporte' ? '+' : ''}
                                                 {formatCurrency(t.amount)}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => openEditTransfer(t)} className="text-gray-400 hover:text-indigo-600 p-1 rounded transition-colors" title="Editar Movimentação">
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteTransfer(t.id)} className="text-gray-400 hover:text-red-600 p-1 rounded transition-colors" title="Cancelar e Excluir">
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -275,8 +346,8 @@ const CapitalGiro = () => {
                                 <input type="number" value={accBal} onChange={e => setAccBal(e.target.value)} className="w-full rounded-lg border border-gray-200 p-2.5 outline-none focus:ring-2 focus:ring-indigo-100" />
                             </div>
                             <div className="flex gap-2 pt-2">
-                                <button type="button" onClick={() => setIsAccountModalOpen(false)} className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
-                                <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Adicionar</button>
+                                <button type="button" onClick={() => { setIsAccountModalOpen(false); setEditingAccountId(null); setAccName(''); setAccBal(''); }} className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                                <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{editingAccountId ? 'Salvar Alterações' : 'Adicionar'}</button>
                             </div>
                         </form>
                     </div>
@@ -297,7 +368,7 @@ const CapitalGiro = () => {
                                     {(transType === 'Resgate' || transType === 'Transferência') && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Conta de Origem</label>
-                                            <select required value={originAcc} onChange={e => setOriginAcc(e.target.value)} className="w-full rounded-lg border border-gray-200 p-2.5 outline-none focus:ring-2 focus:ring-indigo-100">
+                                            <select required value={originAcc} disabled={!!editingTransferId} onChange={e => setOriginAcc(e.target.value)} className="w-full rounded-lg border border-gray-200 p-2.5 outline-none focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-500">
                                                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                             </select>
                                         </div>
@@ -305,7 +376,7 @@ const CapitalGiro = () => {
                                     {(transType === 'Aporte' || transType === 'Transferência') && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Conta de Destino</label>
-                                            <select required value={destAcc} onChange={e => setDestAcc(e.target.value)} className="w-full rounded-lg border border-gray-200 p-2.5 outline-none focus:ring-2 focus:ring-indigo-100">
+                                            <select required value={destAcc} disabled={!!editingTransferId} onChange={e => setDestAcc(e.target.value)} className="w-full rounded-lg border border-gray-200 p-2.5 outline-none focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-500">
                                                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                             </select>
                                         </div>
@@ -321,8 +392,8 @@ const CapitalGiro = () => {
                                 </>
                             )}
                             <div className="flex gap-2 pt-2">
-                                <button type="button" onClick={() => setIsTransferModalOpen(false)} className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
-                                <button type="submit" disabled={accounts.length === 0} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300">Registrar</button>
+                                <button type="button" onClick={() => { setIsTransferModalOpen(false); setEditingTransferId(null); setTransAmount(''); setTransReason(''); }} className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                                <button type="submit" disabled={accounts.length === 0} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300">{editingTransferId ? 'Salvar Alterações' : 'Registrar'}</button>
                             </div>
                         </form>
                     </div>

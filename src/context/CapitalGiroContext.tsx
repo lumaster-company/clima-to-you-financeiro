@@ -25,7 +25,11 @@ interface CapitalGiroContextType {
   isLoading: boolean;
   addAccount: (name: string, type: string, initialBalance?: number) => Promise<void>;
   updateAccount: (id: string, updates: Partial<WorkingCapitalAccount>) => Promise<void>;
+  deleteAccount: (id: string) => Promise<void>;
   registerTransfer: (transfer: Omit<WorkingCapitalTransfer, 'id'>) => Promise<void>;
+  updateTransfer: (id: string, updates: Partial<WorkingCapitalTransfer>) => Promise<void>;
+  deleteTransfer: (id: string) => Promise<void>;
+  updateGlobalGoal: (goal: number) => Promise<void>;
   updateGlobalGoal: (goal: number) => Promise<void>;
 }
 
@@ -87,6 +91,17 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   };
 
+  const deleteAccount = async (id: string) => {
+    try {
+      const { error } = await supabase.from('financial_accounts').delete().eq('id', id);
+      if (error) throw error;
+      setAccounts(prev => prev.filter(a => a.id !== id));
+    } catch (e: any) {
+      console.error("deleteAccount failed:", e.message || e);
+      throw e;
+    }
+  };
+
   const registerTransfer = async (transfer: Omit<WorkingCapitalTransfer, 'id'>) => {
     try {
       const { data, error } = await supabase.from('financial_transfers').insert([transfer]).select().single();
@@ -125,6 +140,79 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   };
 
+  const updateTransfer = async (id: string, updates: Partial<WorkingCapitalTransfer>) => {
+    try {
+      const oldTransfer = transfers.find(t => t.id === id);
+      if (!oldTransfer) throw new Error('Transfer not found');
+
+      const { error } = await supabase.from('financial_transfers').update(updates).eq('id', id);
+      if (error) throw error;
+
+      if (updates.amount !== undefined && updates.amount !== oldTransfer.amount) {
+        const diff = updates.amount - oldTransfer.amount;
+        let newAccounts = [...accounts];
+
+        if (oldTransfer.origin_account_id) {
+          const accIndex = newAccounts.findIndex(a => a.id === oldTransfer.origin_account_id);
+          if (accIndex !== -1) {
+            const newBal = newAccounts[accIndex].balance - diff;
+            await supabase.from('financial_accounts').update({ balance: newBal }).eq('id', oldTransfer.origin_account_id);
+            newAccounts[accIndex] = { ...newAccounts[accIndex], balance: newBal };
+          }
+        }
+        if (oldTransfer.destination_account_id) {
+          const accIndex = newAccounts.findIndex(a => a.id === oldTransfer.destination_account_id);
+          if (accIndex !== -1) {
+            const newBal = newAccounts[accIndex].balance + diff;
+            await supabase.from('financial_accounts').update({ balance: newBal }).eq('id', oldTransfer.destination_account_id);
+            newAccounts[accIndex] = { ...newAccounts[accIndex], balance: newBal };
+          }
+        }
+        setAccounts(newAccounts);
+      }
+
+      setTransfers(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    } catch (e: any) {
+      console.error("updateTransfer failed:", e.message || e);
+      throw e;
+    }
+  };
+
+  const deleteTransfer = async (id: string) => {
+    try {
+      const transfer = transfers.find(t => t.id === id);
+      if (!transfer) throw new Error('Transfer not found');
+
+      const { error } = await supabase.from('financial_transfers').delete().eq('id', id);
+      if (error) throw error;
+
+      let newAccounts = [...accounts];
+
+      if (transfer.origin_account_id) {
+        const accIndex = newAccounts.findIndex(a => a.id === transfer.origin_account_id);
+        if (accIndex !== -1) {
+          const newBal = newAccounts[accIndex].balance + transfer.amount;
+          await supabase.from('financial_accounts').update({ balance: newBal }).eq('id', transfer.origin_account_id);
+          newAccounts[accIndex] = { ...newAccounts[accIndex], balance: newBal };
+        }
+      }
+      if (transfer.destination_account_id) {
+        const accIndex = newAccounts.findIndex(a => a.id === transfer.destination_account_id);
+        if (accIndex !== -1) {
+          const newBal = newAccounts[accIndex].balance - transfer.amount;
+          await supabase.from('financial_accounts').update({ balance: newBal }).eq('id', transfer.destination_account_id);
+          newAccounts[accIndex] = { ...newAccounts[accIndex], balance: newBal };
+        }
+      }
+
+      setAccounts(newAccounts);
+      setTransfers(prev => prev.filter(t => t.id !== id));
+    } catch (e: any) {
+      console.error("deleteTransfer failed:", e.message || e);
+      throw e;
+    }
+  };
+
   const updateGlobalGoal = async (goal: number) => {
     try {
       const { data: currentData } = await supabase.from('financial_settings').select('id').limit(1).maybeSingle();
@@ -140,7 +228,11 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   return (
-    <CapitalGiroContext.Provider value={{ accounts, transfers, globalGoal, isLoading, addAccount, updateAccount, registerTransfer, updateGlobalGoal }}>
+    <CapitalGiroContext.Provider value={{ 
+      accounts, transfers, globalGoal, isLoading, 
+      addAccount, updateAccount, deleteAccount, 
+      registerTransfer, updateTransfer, deleteTransfer, updateGlobalGoal 
+    }}>
       {children}
     </CapitalGiroContext.Provider>
   );
