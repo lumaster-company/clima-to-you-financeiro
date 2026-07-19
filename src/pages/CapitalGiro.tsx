@@ -59,14 +59,18 @@ const CapitalGiro = () => {
         setIsGoalModalOpen(false);
     };
 
-    const handleAccountSubmit = (e: React.FormEvent) => {
+    const handleAccountSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        addAccount(accName, accType, Number(accBal));
-        setAccName(''); setAccType('Conta Corrente'); setAccBal('');
-        setIsAccountModalOpen(false);
+        try {
+            await addAccount(accName, accType, Number(accBal) || 0);
+            setAccName(''); setAccType('Conta Corrente'); setAccBal('');
+            setIsAccountModalOpen(false);
+        } catch (error) {
+            alert('Falha ao adicionar conta. Verifique se o banco de dados (tabelas e RLS) foi atualizado corretamente e tente novamente.');
+        }
     };
 
-    const handleTransferSubmit = (e: React.FormEvent) => {
+    const handleTransferSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const transferPayload = {
             type: transType,
@@ -76,9 +80,13 @@ const CapitalGiro = () => {
             origin_account_id: transType === 'Resgate' || transType === 'Transferência' ? originAcc : undefined,
             destination_account_id: transType === 'Aporte' || transType === 'Transferência' ? destAcc : undefined,
         };
-        registerTransfer(transferPayload);
-        setIsTransferModalOpen(false);
-        setTransAmount(''); setTransReason('');
+        try {
+            await registerTransfer(transferPayload);
+            setIsTransferModalOpen(false);
+            setTransAmount(''); setTransReason('');
+        } catch (error) {
+            alert('Falha ao registrar movimentação. Verifique o console ou as permissões do banco.');
+        }
     };
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);

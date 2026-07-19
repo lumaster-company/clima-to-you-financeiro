@@ -64,10 +64,16 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
   const addAccount = async (name: string, type: string, initialBalance: number = 0) => {
     try {
       const { data, error } = await supabase.from('working_capital_accounts').insert([{ name, type, balance: initialBalance }]).select().single();
-      if (error) throw error;
-      if (data) setAccounts(prev => [...prev, { id: data.id, name: data.name, type: data.type, balance: parseFloat(data.balance) }]);
-    } catch (e) {
-      console.error(e);
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
+      if (data) {
+        setAccounts(prev => [...prev, { id: data.id, name: data.name, type: data.type, balance: parseFloat(data.balance) }]);
+      }
+    } catch (e: any) {
+      console.error("addAccount failed:", e.message || e);
+      throw e;
     }
   };
 
@@ -84,7 +90,10 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
   const registerTransfer = async (transfer: Omit<WorkingCapitalTransfer, 'id'>) => {
     try {
       const { data, error } = await supabase.from('working_capital_transfers').insert([transfer]).select().single();
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error (transfer):", error);
+        throw error;
+      }
 
       if (data) {
         setTransfers(prev => [{ id: data.id, type: data.type, amount: parseFloat(data.amount), reason: data.reason, origin_account_id: data.origin_account_id, destination_account_id: data.destination_account_id, date: data.date }, ...prev]);
@@ -110,8 +119,9 @@ export const CapitalGiroProvider: React.FC<{ children: ReactNode }> = ({ childre
         
         setAccounts(newAccounts);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("registerTransfer failed:", e.message || e);
+      throw e;
     }
   };
 
