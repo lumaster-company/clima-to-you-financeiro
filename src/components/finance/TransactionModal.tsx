@@ -57,7 +57,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const taxAmount = hasInvoice ? Number(amount) * 0.10 : 0; // 10% tax rule
+        const taxAmount = hasInvoice ? Number(amount) * 0.07 : 0; // 7% tax rule
         const numericAmount = Number(amount);
 
         if (transactionToEdit) {
@@ -86,6 +86,29 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                 taxAmount,
                 projectId: projectId || undefined
             });
+
+            if (type === 'income' && hasInvoice && taxAmount > 0) {
+                const [y, m] = date.split('-').map(Number);
+                let nextM = m + 1;
+                let nextY = y;
+                if (nextM > 12) {
+                    nextM = 1;
+                    nextY++;
+                }
+                const dasDate = `${nextY}-${String(nextM).padStart(2, '0')}-20`;
+                
+                addTransaction({
+                    description: `DAS - ${description}`,
+                    amount: taxAmount,
+                    type: 'expense',
+                    category: 'Impostos',
+                    date: dasDate,
+                    status: 'pending',
+                    hasInvoice: false,
+                    taxAmount: 0,
+                    projectId: projectId || undefined
+                });
+            }
         }
 
         onClose();
@@ -234,8 +257,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                         <div className="bg-blue-50 p-3 rounded-lg flex items-center gap-3 text-blue-700 text-sm animated-in fade-in">
                             <Calculator size={18} />
                             <span>
-                                Previsão de Impostos (DAS/ISS - 10%):
-                                <strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(amount) * 0.10)}</strong>
+                                Previsão de Impostos (DAS - 7%):
+                                <strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(amount) * 0.07)}</strong>
                             </span>
                         </div>
                     )}

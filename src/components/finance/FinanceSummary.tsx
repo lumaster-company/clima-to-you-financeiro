@@ -3,14 +3,15 @@ import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, Calendar, Clock, TrendingUp } from 'lucide-react';
 
 import clsx from 'clsx';
-import { getTodayString, addDaysStr } from '../../utils/dateUtils';
+import { getTodayString } from '../../utils/dateUtils';
 
 const FinanceSummary = () => {
     const { filteredTransactions: transactions, balance } = useFinance();
     const { role } = useAuth();
 
     const today = getTodayString();
-    const next7DaysStr = addDaysStr(today, 7);
+    const [year, month] = today.split('-');
+    const lastDayOfMonthStr = `${year}-${month}-${String(new Date(Number(year), Number(month), 0).getDate()).padStart(2, '0')}`;
 
     // Logic: Overdue (Red) - Status 'pending' AND date < today AND Type 'expense'
     const overdueAmount = transactions
@@ -22,9 +23,9 @@ const FinanceSummary = () => {
         .filter(t => t.type === 'expense' && t.status === 'pending' && t.date === today)
         .reduce((acc, curr) => acc + curr.amount, 0);
 
-    // Logic: Due Soon (Blue) - Status 'pending' AND date > today AND date <= next7Days AND Type 'expense'
+    // Logic: Due in the current month (Blue) - Status 'pending' AND date > today AND date <= lastDayOfMonth AND Type 'expense'
     const dueSoonAmount = transactions
-        .filter(t => t.type === 'expense' && t.status === 'pending' && t.date > today && t.date <= next7DaysStr)
+        .filter(t => t.type === 'expense' && t.status === 'pending' && t.date > today && t.date <= lastDayOfMonthStr)
         .reduce((acc, curr) => acc + curr.amount, 0);
 
     const formatCurrency = (val: number) =>
@@ -60,7 +61,7 @@ const FinanceSummary = () => {
                     icon={Calendar}
                 />
                 <Card
-                    title="A Vencer (7 dias)"
+                    title="A Vencer no Mês"
                     value={dueSoonAmount}
                     color="text-blue-600"
                     icon={Clock}
