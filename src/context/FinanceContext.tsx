@@ -1,7 +1,7 @@
-
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { getCurrentYear } from '../utils/dateUtils';
+import { useAuth } from './AuthContext';
 
 export type TransactionType = 'income' | 'expense';
 export type TransactionStatus = 'pending' | 'paid' | 'overdue';
@@ -73,6 +73,7 @@ interface FinanceContextType {
   importDefaultFixedCosts: () => Promise<void>;
   importTransactions: (newTransactions: Omit<Transaction, 'id'>[]) => Promise<void>;
   clearLegacyHistory: () => void;
+  refreshFinanceData: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -108,6 +109,7 @@ const DEFAULT_EXPENSE_CATEGORIES = [
 ];
 
 export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { session } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fixedCosts, setFixedCosts] = useState<FixedCost[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -116,91 +118,131 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [selectedYear, setSelectedYear] = useState<string>(getCurrentYear());
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch initial data
+  // Authoritative server fetch
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch Transactions
+      const { data: txData, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (txError) throw txError;
+
+      const mappedTransactions: Transaction[] = (txData || []).map(t => ({
+        id: t.id,
+        description: t.description,
+        amount: Number(Number(t.amount).toFixed(2)) || 0,
+        type: t.type,
+        category: t.category,
+        date: t.date,
+        status: t.status,
+        hasInvoice: t.is_fiscal,
+        taxAmount: t.tax_amount ? Number(Number(t.tax_amount).toFixed(2)) : undefined,
+        contractId: t.contract_id,
+        projectId: t.project_id
+      }));
+      setTransactions(mappedTransactions);
+
+      // Fetch Fixed Costs
+      const { data: fcData, error: fcError } = await supabase
+        .from('fixed_costs')
+        .select('*');
+
+      if (fcError) throw fcError;
+
+      const mappedFixedCosts: FixedCost[] = (fcData || []).map(fc => ({
+        id: fc.id,
+        name: fc.name,
+        amount: Number(Number(fc.amount).toFixed(2)) || 0,
+        dueDay: fc.due_day,
+        isActive: fc.is_active
+      }));
+      setFixedCosts(mappedFixedCosts);
+
+      // Fetch Projects
+      const { data: projData, error: projError } = await supabase
+        .from('projects')
+        .select('*')
+        .order('name');
+        
+      if (!projError && projData) {
+        const mappedProjects: Project[] = projData.map(p => ({
+          id: p.id,
+          name: p.name,
+          taxRate: p.tax_rate != null ? parseFloat(p.tax_rate) : undefined,
+          indirectCostRate: p.indirect_cost_rate != null ? parseFloat(p.indirect_cost_rate) : undefined,
+          toolKit: p.tool_kit || '',
+          toolUsageValue: p.tool_usage_value ? parseFloat(p.tool_usage_value) : 0,
+          vehicleUsageValue: p.vehicle_usage_value ? parseFloat(p.vehicle_usage_value) : 0,
+          laborAllocations: p.labor_allocations || [],
+          closingDate: p.closing_date
+        }));
+        setProjects(mappedProjects);
+      }
+
+      // Fetch Categories
+      const { data: catData, error: catError } = await supabase.from('categories').select('*');
+      if (!catError && catData) {
+        const inc = catData.filter(c => c.type === 'income').map(c => c.name);
+        const exp = catData.filter(c => c.type === 'expense').map(c => c.name);
+        if (inc.length > 0) setIncomeCategories(prev => Array.from(new Set([...prev, ...inc])));
+        if (exp.length > 0) setExpenseCategories(prev => Array.from(new Set([...prev, ...exp])));
+      }
+
+    } catch (error) {
+      console.error('Error fetching data from Supabase:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 1. Initial and auth-change trigger
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch Transactions
-        const { data: txData, error: txError } = await supabase
-          .from('transactions')
-          .select('*')
-          .order('date', { ascending: false });
+    fetchData();
+  }, [fetchData, session]);
 
-        if (txError) throw txError;
+  // 2. Window focus & visibility change trigger
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchData();
+    };
 
-        const mappedTransactions: Transaction[] = (txData || []).map(t => ({
-          id: t.id,
-          description: t.description,
-          amount: parseFloat(t.amount),
-          type: t.type,
-          category: t.category,
-          date: t.date,
-          status: t.status,
-          hasInvoice: t.is_fiscal,
-          taxAmount: t.tax_amount ? parseFloat(t.tax_amount) : undefined,
-          contractId: t.contract_id,
-          projectId: t.project_id
-        }));
-        setTransactions(mappedTransactions);
-
-        // Fetch Fixed Costs
-        const { data: fcData, error: fcError } = await supabase
-          .from('fixed_costs')
-          .select('*');
-
-        if (fcError) throw fcError;
-
-        const mappedFixedCosts: FixedCost[] = (fcData || []).map(fc => ({
-          id: fc.id,
-          name: fc.name,
-          amount: parseFloat(fc.amount),
-          dueDay: fc.due_day,
-          isActive: fc.is_active
-        }));
-        setFixedCosts(mappedFixedCosts);
-
-        // Fetch Projects
-        const { data: projData, error: projError } = await supabase
-          .from('projects')
-          .select('*')
-          .order('name');
-          
-        if (!projError && projData) {
-          const mappedProjects: Project[] = projData.map(p => ({
-            id: p.id,
-            name: p.name,
-            taxRate: p.tax_rate != null ? parseFloat(p.tax_rate) : undefined,
-            indirectCostRate: p.indirect_cost_rate != null ? parseFloat(p.indirect_cost_rate) : undefined,
-            toolKit: p.tool_kit || '',
-            toolUsageValue: p.tool_usage_value ? parseFloat(p.tool_usage_value) : 0,
-            vehicleUsageValue: p.vehicle_usage_value ? parseFloat(p.vehicle_usage_value) : 0,
-            laborAllocations: p.labor_allocations || [],
-            closingDate: p.closing_date
-          }));
-          setProjects(mappedProjects);
-        }
-
-        // Fetch Categories (if implemented in DB, else use defaults + local logic or fetch form separate table)
-        // For now, adhering to the plan: explicit tables for transactions, employees, fixed_costs. 
-        // Categories are still in local state or we can use a 'categories' table if created.
-        const { data: catData, error: catError } = await supabase.from('categories').select('*');
-        if (!catError && catData) {
-          const inc = catData.filter(c => c.type === 'income').map(c => c.name);
-          const exp = catData.filter(c => c.type === 'expense').map(c => c.name);
-          if (inc.length > 0) setIncomeCategories(prev => Array.from(new Set([...prev, ...inc])));
-          if (exp.length > 0) setExpenseCategories(prev => Array.from(new Set([...prev, ...exp])));
-        }
-
-      } catch (error) {
-        console.error('Error fetching data from Supabase:', error);
-      } finally {
-        setIsLoading(false);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
       }
     };
 
-    fetchData();
-  }, []);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchData]);
+
+  // 3. Supabase Realtime trigger
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime:finance_transactions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fixed_costs' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
 
   // Derived State
   const filteredTransactions = React.useMemo(() => {
@@ -226,15 +268,18 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Actions
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     try {
+      const cleanAmount = Number(Number(transaction.amount).toFixed(2));
+      const cleanTax = transaction.taxAmount ? Number(Number(transaction.taxAmount).toFixed(2)) : undefined;
+
       const dbPayload = {
-        description: transaction.description,
-        amount: transaction.amount,
+        description: transaction.description.trim(),
+        amount: cleanAmount,
         type: transaction.type,
         category: transaction.category,
         date: transaction.date,
         status: transaction.status,
         is_fiscal: transaction.hasInvoice,
-        tax_amount: transaction.taxAmount,
+        tax_amount: cleanTax,
         contract_id: transaction.contractId,
         project_id: transaction.projectId
       };
@@ -246,24 +291,10 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         .single();
 
       if (error) throw error;
-
-      if (data) {
-        setTransactions(prev => [{
-          id: data.id,
-          description: data.description,
-          amount: parseFloat(data.amount),
-          type: data.type,
-          category: data.category,
-          date: data.date,
-          status: data.status,
-          hasInvoice: data.is_fiscal,
-          taxAmount: data.tax_amount ? parseFloat(data.tax_amount) : undefined,
-          contractId: data.contract_id,
-          projectId: data.project_id
-        }, ...prev]);
-      }
-    } catch (error) {
+      await fetchData();
+    } catch (error: any) {
       console.error('Error adding transaction:', error);
+      throw error;
     }
   };
 
@@ -275,24 +306,24 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         .eq('id', id);
 
       if (error) throw error;
-      setTransactions(prev => prev.filter(t => t.id !== id));
-    } catch (error) {
+      await fetchData();
+    } catch (error: any) {
       console.error('Error removing transaction:', error);
+      throw error;
     }
   };
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
       const dbUpdates: any = {};
-      if (updates.description !== undefined) dbUpdates.description = updates.description;
-      if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+      if (updates.description !== undefined) dbUpdates.description = updates.description.trim();
+      if (updates.amount !== undefined) dbUpdates.amount = Number(Number(updates.amount).toFixed(2));
       if (updates.type !== undefined) dbUpdates.type = updates.type;
       if (updates.category !== undefined) dbUpdates.category = updates.category;
       if (updates.date !== undefined) dbUpdates.date = updates.date;
       if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.hasInvoice !== undefined) dbUpdates.is_fiscal = updates.hasInvoice;
-      if (updates.taxAmount !== undefined) dbUpdates.tax_amount = updates.taxAmount;
-      // contractId usually not updated here, but if needed:
+      if (updates.taxAmount !== undefined) dbUpdates.tax_amount = Number(Number(updates.taxAmount).toFixed(2));
       if (updates.contractId !== undefined) dbUpdates.contract_id = updates.contractId;
       if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId;
 
@@ -302,10 +333,10 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         .eq('id', id);
 
       if (error) throw error;
-
-      setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-    } catch (error) {
+      await fetchData();
+    } catch (error: any) {
       console.error('Error updating transaction:', error);
+      throw error;
     }
   };
 
@@ -626,6 +657,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       importDefaultFixedCosts,
       importTransactions,
       clearLegacyHistory,
+      refreshFinanceData: fetchData,
       isLoading
     }}>
       {children}

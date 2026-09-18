@@ -54,64 +54,78 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
         }
     }, [isOpen, transactionToEdit]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const taxAmount = hasInvoice ? Number(amount) * 0.07 : 0; // 7% tax rule
         const numericAmount = Number(amount);
-
-        if (transactionToEdit) {
-            // Update
-            updateTransaction(transactionToEdit.id, {
-                description,
-                amount: numericAmount,
-                type,
-                category,
-                date,
-                status,
-                hasInvoice,
-                taxAmount,
-                projectId: projectId || undefined
-            });
-        } else {
-            // Create
-            addTransaction({
-                description,
-                amount: numericAmount,
-                type,
-                category,
-                date,
-                status,
-                hasInvoice,
-                taxAmount,
-                projectId: projectId || undefined
-            });
-
-            if (type === 'income' && hasInvoice && taxAmount > 0) {
-                const [y, m] = date.split('-').map(Number);
-                let nextM = m + 1;
-                let nextY = y;
-                if (nextM > 12) {
-                    nextM = 1;
-                    nextY++;
-                }
-                const dasDate = `${nextY}-${String(nextM).padStart(2, '0')}-20`;
-                
-                addTransaction({
-                    description: `DAS - ${description}`,
-                    amount: taxAmount,
-                    type: 'expense',
-                    category: 'Impostos',
-                    date: dasDate,
-                    status: 'pending',
-                    hasInvoice: false,
-                    taxAmount: 0,
-                    projectId: projectId || undefined
-                });
-            }
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            alert('Por favor, insira um valor válido maior que zero.');
+            return;
         }
 
-        onClose();
+        const taxAmount = hasInvoice ? Number((numericAmount * 0.07).toFixed(2)) : 0;
+
+        try {
+            setIsSaving(true);
+            if (transactionToEdit) {
+                // Update
+                await updateTransaction(transactionToEdit.id, {
+                    description,
+                    amount: numericAmount,
+                    type,
+                    category,
+                    date,
+                    status,
+                    hasInvoice,
+                    taxAmount,
+                    projectId: projectId || undefined
+                });
+            } else {
+                // Create
+                await addTransaction({
+                    description,
+                    amount: numericAmount,
+                    type,
+                    category,
+                    date,
+                    status,
+                    hasInvoice,
+                    taxAmount,
+                    projectId: projectId || undefined
+                });
+
+                if (type === 'income' && hasInvoice && taxAmount > 0) {
+                    const [y, m] = date.split('-').map(Number);
+                    let nextM = m + 1;
+                    let nextY = y;
+                    if (nextM > 12) {
+                        nextM = 1;
+                        nextY++;
+                    }
+                    const dasDate = `${nextY}-${String(nextM).padStart(2, '0')}-20`;
+                    
+                    await addTransaction({
+                        description: `DAS - ${description}`,
+                        amount: taxAmount,
+                        type: 'expense',
+                        category: 'Impostos',
+                        date: dasDate,
+                        status: 'pending',
+                        hasInvoice: false,
+                        taxAmount: 0,
+                        projectId: projectId || undefined
+                    });
+                }
+            }
+
+            onClose();
+        } catch (error: any) {
+            alert('Falha ao salvar o lançamento no banco de dados: ' + (error?.message || error));
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -266,18 +280,20 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
                     <div className="pt-4 flex gap-3">
                         <button
                             type="button"
+                            disabled={isSaving}
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                            className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors disabled:opacity-50"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
-                            className={`flex-1 px-4 py-2 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${type === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                            disabled={isSaving}
+                            className={`flex-1 px-4 py-2 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${type === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
                                 }`}
                         >
                             <Save size={18} />
-                            {transactionToEdit ? 'Salvar Alterações' : 'Adicionar Lançamento'}
+                            {isSaving ? 'Salvando...' : transactionToEdit ? 'Salvar Alterações' : 'Adicionar Lançamento'}
                         </button>
                     </div>
                 </form>

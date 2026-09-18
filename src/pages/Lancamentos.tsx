@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFinance, type Transaction } from '../context/FinanceContext';
 import FinanceSummary from '../components/finance/FinanceSummary';
 import TaxPredictionCard from '../components/finance/TaxPredictionCard';
@@ -9,20 +9,38 @@ import { formatDateBR, getTodayString } from '../utils/dateUtils';
 
 const Lancamentos = () => {
     // renamed filteredTransactions from context to yearTransactions to avoid naming conflict with local filter
-    const { filteredTransactions: yearTransactions, removeTransaction, updateTransaction } = useFinance();
+    const { filteredTransactions: yearTransactions, removeTransaction, updateTransaction, refreshFinanceData } = useFinance();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+    // Refresh transactions from database when page opens
+    useEffect(() => {
+        refreshFinanceData();
+    }, [refreshFinanceData]);
 
     const displayedTransactions = yearTransactions
         .filter(t => filterType === 'all' || t.type === filterType)
         .filter(t => t.description.toLowerCase().includes(searchTerm.toLowerCase()) || t.category.toLowerCase().includes(searchTerm.toLowerCase()))
         .sort((a, b) => b.date.localeCompare(a.date));
 
-    const toggleStatus = (id: string, currentStatus: string) => {
+    const toggleStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
-        updateTransaction(id, { status: newStatus as any });
+        try {
+            await updateTransaction(id, { status: newStatus as any });
+        } catch (error: any) {
+            alert('Falha ao atualizar o status: ' + (error?.message || error));
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir esta transação?')) return;
+        try {
+            await removeTransaction(id);
+        } catch (error: any) {
+            alert('Falha ao excluir a transação: ' + (error?.message || error));
+        }
     };
 
     const handleEdit = (transaction: Transaction) => {
@@ -149,11 +167,7 @@ const Lancamentos = () => {
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    if (confirm('Tem certeza que deseja excluir esta transação?')) {
-                                                        removeTransaction(t.id);
-                                                    }
-                                                }}
+                                                onClick={() => handleDelete(t.id)}
                                                 className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="Excluir"
                                             >

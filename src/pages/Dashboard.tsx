@@ -20,13 +20,20 @@ const Dashboard = () => {
         balance,
         selectedYear,
         setSelectedYear,
-        fixedCosts
+        fixedCosts,
+        refreshFinanceData
     } = useFinance();
     const { getMRR, getActiveContractsCount } = useContracts();
-    const { accounts } = useCapitalGiro();
+    const { accounts, refreshData: refreshCapitalData } = useCapitalGiro();
     const { employees } = useTeam();
 
     const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+
+    // Sync data immediately on dashboard mount
+    useEffect(() => {
+        refreshFinanceData();
+        refreshCapitalData();
+    }, [refreshFinanceData, refreshCapitalData]);
 
     // Enforce 2026 when in Operational View
     useEffect(() => {

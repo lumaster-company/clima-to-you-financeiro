@@ -195,8 +195,12 @@ create table if not exists financial_accounts (
 
 alter table financial_accounts enable row level security;
 drop policy if exists "Allow all operations for authenticated" on financial_accounts;
+drop policy if exists "Allow all operations for public" on financial_accounts;
+drop policy if exists "Allow all operations for anon" on financial_accounts;
 create policy "Allow all operations for authenticated" on financial_accounts
   for all to authenticated using (true) with check (true);
+create policy "Allow all operations for anon" on financial_accounts
+  for all to anon using (true) with check (true);
 
 create table if not exists financial_transfers (
   id uuid default uuid_generate_v4() primary key,
@@ -211,8 +215,12 @@ create table if not exists financial_transfers (
 
 alter table financial_transfers enable row level security;
 drop policy if exists "Allow all operations for authenticated" on financial_transfers;
+drop policy if exists "Allow all operations for public" on financial_transfers;
+drop policy if exists "Allow all operations for anon" on financial_transfers;
 create policy "Allow all operations for authenticated" on financial_transfers
   for all to authenticated using (true) with check (true);
+create policy "Allow all operations for anon" on financial_transfers
+  for all to anon using (true) with check (true);
 
 create table if not exists financial_settings (
   id uuid default uuid_generate_v4() primary key,
@@ -222,6 +230,29 @@ create table if not exists financial_settings (
 
 alter table financial_settings enable row level security;
 drop policy if exists "Allow all operations for authenticated" on financial_settings;
+drop policy if exists "Allow all operations for public" on financial_settings;
+drop policy if exists "Allow all operations for anon" on financial_settings;
 create policy "Allow all operations for authenticated" on financial_settings
   for all to authenticated using (true) with check (true);
+create policy "Allow all operations for anon" on financial_settings
+  for all to anon using (true) with check (true);
+
+-- Enable Supabase Realtime for instant synchronization
+do $$
+begin
+  alter publication supabase_realtime add table financial_accounts;
+exception when others then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table financial_transfers;
+exception when others then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table financial_settings;
+exception when others then null;
+end $$;
 
