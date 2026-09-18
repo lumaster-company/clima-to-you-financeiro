@@ -284,11 +284,9 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         project_id: transaction.projectId
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('transactions')
-        .insert([dbPayload])
-        .select()
-        .single();
+        .insert([dbPayload]);
 
       if (error) throw error;
       await fetchData();
