@@ -48,7 +48,11 @@ const Dashboard = () => {
     const monthlyFixedCost = totalFixed + totalTeamCost;
     const reserveBalance = accounts.reduce((acc, curr) => acc + curr.balance, 0);
     const coverageMonths = monthlyFixedCost > 0 ? (reserveBalance / monthlyFixedCost) : 0;
-    const availableBalance = balance - reserveBalance;
+    
+    // O Saldo Disponível Operacional é o saldo de caixa real gerado pelo fluxo das operações da empresa
+    const operationalBalance = balance;
+    // Liquidez Financeira Total (Patrimônio em Caixa): Caixa Operacional + Reserva Blindada de Capital de Giro
+    const totalCompanyLiquidity = operationalBalance + reserveBalance;
     
     const getHealthColor = () => {
         if (coverageMonths > 3) return 'bg-green-500 text-white';
@@ -163,22 +167,40 @@ const Dashboard = () => {
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
                             <DollarSign size={120} />
                         </div>
-                        <div className="relative z-10 flex justify-between items-start">
+                        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                             <div>
-                                <p className="text-sm font-bold text-indigo-800 uppercase tracking-wider mb-2">Saldo Disponível Operacional</p>
-                                <h3 className={`text-5xl font-extrabold tracking-tight ${availableBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-                                    {formatCurrency(availableBalance)}
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <p className="text-sm font-bold text-indigo-900 uppercase tracking-wider">Saldo Disponível Operacional</p>
+                                </div>
+                                <h3 className={`text-5xl font-extrabold tracking-tight ${operationalBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                                    {formatCurrency(operationalBalance)}
                                 </h3>
-                                <p className="text-sm text-gray-500 mt-4 flex items-center gap-1.5">
-                                    <span className="inline-block w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>
-                                    <span>Base para decisão de gastos operacionais.</span>
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1 pl-3">
-                                    * Cálculo: Resultado Líquido contábil ({formatCurrency(balance)}) deduzido da Reserva de Capital de Giro ({formatCurrency(reserveBalance)}).
+                                <p className="text-sm text-gray-600 mt-3 flex items-center gap-2">
+                                    <span>Saldo em conta corrente para decisão e pagamento de gastos operacionais.</span>
                                 </p>
                             </div>
-                            <div className="p-4 bg-white rounded-2xl shadow-sm border border-indigo-50 text-indigo-600">
-                                <Landmark size={32} />
+
+                            <div className="flex flex-wrap sm:flex-nowrap gap-3">
+                                <div className="bg-white/90 backdrop-blur-sm px-4 py-3 rounded-xl border border-indigo-100 shadow-sm flex items-center gap-3">
+                                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                        <Landmark size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-medium">Capital de Giro (Blindado)</p>
+                                        <p className="text-base font-bold text-indigo-900">{formatCurrency(reserveBalance)}</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/90 backdrop-blur-sm px-4 py-3 rounded-xl border border-blue-100 shadow-sm flex items-center gap-3">
+                                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                                        <TrendingUp size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-medium">Patrimônio Financeiro Total</p>
+                                        <p className="text-base font-bold text-gray-900">{formatCurrency(totalCompanyLiquidity)}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
